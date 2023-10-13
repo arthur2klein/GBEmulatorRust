@@ -5,7 +5,7 @@
 
 //Definition des structs
 
-struct CPU {
+pub struct CPU {
     registers: Register,
     flags: FlagRegister,
     // to do in a separated file
@@ -13,8 +13,9 @@ struct CPU {
     is_halted: bool,
     // If 1, enable interrupts ; if 2, enable interrupts after next instruction
     ei: u32,
-    // If 1, disable interrputs after next instruction
-    di: u32
+    // If 2, disable interrputs after next instruction
+    di: u32,
+    emi: bool,
 }
 
 
@@ -36,6 +37,21 @@ struct Registers {
 //Implementation des registres
 
 impl Registers {
+
+    fn new() -> Self {
+        Registers {
+            a: 0x01,
+            b: 0xB0,
+            c: 0x13,
+            d: 0x00,
+            e: 0xD8,
+            h: 0x01,
+            l: 0x4D,
+            pc: 0x0100,
+            sp: 0xFFFE,
+        }
+    }
+
     fn get_bc(&self) -> u16 {
         (self.b as u16) << 8
             | self.c as u16
@@ -147,6 +163,17 @@ impl Registers {
 
 impl CPU {
 
+    pub fn new() -> Self {
+        CPU{
+            registers: Register::new(),
+            mmu: MMU::new(),
+            is_halted: false,
+            ei: 0,
+            di: 0,
+            emi: true,
+        }
+    }
+
     // Commuication avec mmu
     // MMU functions read_byte, read_word, write_byte, write_word, switch_speed
     fn fetchbyte(&mut self) -> u8 {
@@ -162,7 +189,7 @@ impl CPU {
     }
 
     fn send_stop(&mut self) {
-        self.mmu.switch_speed();
+        self.mmu.receive_stop();
     }
 
     fn halt(&mut self) {
@@ -190,7 +217,6 @@ impl CPU {
         self.registers.pc = value;
     }
 
-    // Jump
     fn jr(&mut self) {
         // Les conversions permettent d'assurer que fetchbyte est considéré
         // comme signé, mais pas pc, que l'opérations puissnet avoir lieu, et
@@ -454,7 +480,6 @@ impl CPU {
                     self.registers.pc += 1;
                     8
                 }
-
             },
             // ADD HL, HL
             0x29 => {
@@ -1642,6 +1667,7 @@ impl CPU {
             0xD9 => {
                 self.registers.pc = self.pop();
                 self.ei = 1;
+                self.di = 0;
                 16
             },
             // JP C, a16
@@ -1774,7 +1800,9 @@ impl CPU {
             },
             // DI
             0xF3 => {
-                self.di = 1;
+                self.di = 2;
+                // Cancel any scheduled effects of the ei instruction
+                self.ei = 0;
                 4
             },
             // PUSH AF
@@ -3451,10 +3479,35 @@ impl CPU {
         }
     }
 
-
+    pub fn execute_step(&mut self) -> u32 {
+        match self.di {
+            2 => {
+                self.di = 1;
+            },
+            1 => {
+                self.di = 0;
+                self.emi = false;
+            }
+        }
+        match self.ei {
+            2 => {
+                self.ei = 1;
+            },
+            1 => {
+                self.ei = 0;
+                self.emi = true;
+            }
+        }
+        if self.ime {
+        }
+        // TODO: manage interruptions
+        if self.is_halted {
+            return 4;
+        }
+        return self.receiveOp();
+    }
 
     // Fonctions arithmétiques
-
     fn inc(&mut self, value: u8) -> u8 {
         let res = value.wrapping_add(1);
         self.registers.set_zero(
@@ -3879,4 +3932,4 @@ impl CPU {
     fn set(&mut self, bit: u32, value: u8) {
         value | ((1 << bit) as u8)
     }
-}
+
