@@ -31,7 +31,7 @@ pub struct IO {
     channel_4_frequency_and_randomness: u8,
     channel_4_control: u8,
     // Wave pattern
-    wave_pattern_ram: u16,
+    wave_pattern_ram: Vec <u8>,
     // LCD Control
     lcd_contrl: u8,
     // LCD status registers
@@ -47,24 +47,8 @@ pub struct IO {
     bg_palette_data: u8,
     obp0: u8,
     obp1: u8,
-    // VRAM Bank
-    vram_bank: u8,
     // Set to non zero to diasable boot ROM
     disable_boot_rom: u8,
-    // VRAM DMA
-    hdma1: u8,
-    hdma1: u8,
-    hdma3: u8,
-    hdma4: u8,
-    hdma5: u8a,
-    // LCD Color palettes
-    background_color_palette_specification: u8,
-    background_color_palette_data: u8,
-    obj_color_palette_specification: u8,
-    obj_color_palette_data: u8,
-    // WRAM Bank Select
-    wram_bank_select: u8
-
 }
 
 impl IO {
@@ -85,110 +69,139 @@ impl IO {
         
     }
 
-    pub fn read(&self, adress: u16) -> u8 {
-        match (adress & 0x00FF) as u8 {
+    pub fn read(&self, address: u16) -> u8 {
+        match (address & 0x00FF) as u8 {
             0x00 => {
-                joypad_input
+                self.joypad_input
             },
             0x01 => {
-                ((serial_transfer & 0xFF00) >> 2) as u8
+                ((self.serial_transfer & 0xFF00) >> 2) as u8
             },
             0x02 => {
-                (serial_transfer & 0x00FF) as u8
+                (self.serial_transfer & 0x00FF) as u8
             },
             0x04 => {
-                divider
+                self.divider
             },
             0x05 => {
-                timer_counter
+                self.timer_counter
             },
             0x06 => {
-                timer_modulo
+                self.timer_modulo
             },
             0x07 => {
-                timer_control
+                self.timer_control
             },
             0x10 => {
-                channel_1_sweep
+                self.channel_1_sweep
             },
             0x11 => {
-                channel_1_length_timer_and_duty_cycle
+                self.channel_1_length_timer_and_duty_cycle
             },
             0x12 => {
-                channel_1_volume_and_envolope
+                self.channel_1_volume_and_envolope
             },
             0x13 => {
-                channel_1_period_low
+                self.channel_1_period_low
             },
             0x14 => {
-                channel_1_period_high_and_control
+                self.channel_1_period_high_and_control
             },
             0x16 => {
-                channel_2_length_timer_and_duty_cycle
+                self.channel_2_length_timer_and_duty_cycle
+            },
+            0x17 => {
+                self.channel_2_volume_and_envolope
+            },
+            0x18 => {
+                self.channel_2_period_low
+            },
+            0x19 => {
+                self.channel_2_period_high_and_control
+            },
+            0x1A => {
+                self.channel_3_dac_enable
+            },
+            0x1B => {
+                self.channel_3_length_timer
+            },
+            0x1C => {
+                self.channel_3_output_level
+            },
+            0x1D => {
+                self.channel_3_period_low
+            },
+            0x1E => {
+                self.channel_3_period_high_and_control
+            },
+            0x20 => {
+                self.channel_4_lenght_timer
+            },
+            0x21 => {
+                self.channel_4_volume_and_enveloper
+            },
+            0x22 => {
+                self.channel_4_frequency_and_randomness
+            },
+            0x23 => {
+                self.channel_4_control
             },
             0x17 => {
                 channel_2_volume_and_envolope
             },
             0x24 => {
-                master_volume_and_vin_panning
+                self.master_volume_and_vin_panning
             },
             0x25 => {
-                sound_panning
+                self.sound_panning
             },
             0x26 => {
-                audio_master_control
+                self.audio_master_control
             },
-            channel_2_period_low: u8,
-            channel_2_period_high_and_control: u8,
-            channel_3_dac_enable: u8,
-            channel_3_length_timer: u8,
-            channel_3_output_level: u8,
-            channel_3_period_low: u8,
-            channel_3_period_high_and_control: u8,
-            channel_4_lenght_timer: u8,
-            channel_4_volume_and_enveloper: u8,
-            channel_4_frequency_and_randomness: u8,
-            channel_4_control: u8,
-            // Wave pattern
-            wave_pattern_ram: u16,
-            // LCD Control
-            lcd_contrl: u8,
-            // LCD status registers
-            lcd_y_coordinate: u8,
-            lyc_compare: u8,
-            lcd_status: u8,
-            // LCD Position and scrolling
-            background_viewport_y: u8,
-            background_viewport_x: u8,
-            windoy_y_position: u8,
-            window_x_position_plus_sept: u8,
-            // Palettes
-            bg_palette_data: u8,
-            obp0: u8,
-            obp1: u8,
-            // VRAM Bank
-            vram_bank: u8,
-            // Set to non zero to diasable boot ROM
-            disable_boot_rom: u8,
-            // VRAM DMA
-            hdma1: u8,
-            hdma1: u8,
-            hdma3: u8,
-            hdma4: u8,
-            hdma5: u8a,
-            // LCD Color palettes
-            background_color_palette_specification: u8,
-            background_color_palette_data: u8,
-            obj_color_palette_specification: u8,
-            obj_color_palette_data: u8,
-            // WRAM Bank Select
-            wram_bank_select: u8
-        }
+            0x30 => {
+                self.wave_pattern_ram[address - 0x30]
+            },
+            0x40 => {
+                self.lcd_control
+            },
+            0x41 => {
+                self.lcd_status
+            },
+            0x42 => {
+                self.background_viewport_y
+            },
+            0x43 => {
+                self.background_viewport_x
+            },
+            0x44 => {
+                self.lcd_y_coordinate
+            },
+            0x4A => {
+                self.windoy_y_position
+            },
+            0x4B => {
+                self.window_x_position_plus_sept
+            },
+            0x45 => {
+                self.lyc_compare
+            },
+            0x47 => {
+                self.bg_palette_data
+            },
+            0x48 => {
+                self.obp0
+            },
+            0x49 => {
+                self.obp1
+            },
+            0x50 => {
+                self.disable_boot_rom
+            },
     }
 
     pub fn write(
         &mut self,
-        adress: u16,
+        address: u16,
         value: u8
     ) {
     }
