@@ -226,6 +226,10 @@ impl MMU {
         );
     }
 
+    pub fn update(&mut self, n_cycles: u32) {
+        io.update(n_cycles);
+    }
+
     pub fn receive_stop(&mut self) {
         self.is_double_speed = !self.double_speed;
     }

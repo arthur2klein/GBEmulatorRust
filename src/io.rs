@@ -126,6 +126,9 @@ impl IO {
             0x16 => {
                 channel_2_length_timer_and_duty_cycle
             },
+            0x17 => {
+                channel_2_volume_and_envolope
+            },
             0x24 => {
                 master_volume_and_vin_panning
             },
@@ -135,8 +138,6 @@ impl IO {
             0x26 => {
                 audio_master_control
             },
-            
-            channel_2_volume_and_envolope: u8,
             channel_2_period_low: u8,
             channel_2_period_high_and_control: u8,
             channel_3_dac_enable: u8,
