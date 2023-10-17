@@ -1,6 +1,25 @@
+// The SsBA buttons are select button and are read from bits 3 to 0 when bit 5
+// is 0.
+// The movement buttons read from bits 3 to 0 when bit 4 is 0.
+pub enum Joypad_button {
+    // SsBA buttons
+    START,
+    SELECT,
+    B,
+    A,
+    // Movement buttons
+    DOWN,
+    UP,
+    LEFT,
+    RIGHT,
+}
+
 pub struct IO {
     // Joypad
     joypad_input: u8,
+    joypad_input_ssba: u8,
+    joypad_input_movement: u8,
+    joypad_pending_interruption: bool
     // Serial transfer
     serial_transfer: u16,
     // Timer and divider
@@ -8,36 +27,12 @@ pub struct IO {
     timer_counter: u8,
     timer_modulo: u8,
     timer_control: u8,
-    // Audio
-    audio_master_control: u8,
-    sound_panning: u8,
-    master_volume_and_vin_panning: u8,
-    channel_1_sweep: u8,
-    channel_1_length_timer_and_duty_cycle u8,
-    channel_1_volume_and_envolope: u8,
-    channel_1_period_low: u8,
-    channel_1_period_high_and_control: u8,
-    channel_2_length_timer_and_duty_cycle u8,
-    channel_2_volume_and_envolope: u8,
-    channel_2_period_low: u8,
-    channel_2_period_high_and_control: u8,
-    channel_3_dac_enable: u8,
-    channel_3_length_timer: u8,
-    channel_3_output_level: u8,
-    channel_3_period_low: u8,
-    channel_3_period_high_and_control: u8,
-    channel_4_lenght_timer: u8,
-    channel_4_volume_and_enveloper: u8,
-    channel_4_frequency_and_randomness: u8,
-    channel_4_control: u8,
-    // Wave pattern
-    wave_pattern_ram: Vec <u8>,
     // LCD Control
     lcd_contrl: u8,
     // LCD status registers
+    lcd_status: u8,
     lcd_y_coordinate: u8,
     lyc_compare: u8,
-    lcd_status: u8,
     // LCD Position and scrolling
     background_viewport_y: u8,
     background_viewport_x: u8,
@@ -71,15 +66,18 @@ impl IO {
 
     pub fn read(&self, address: u16) -> u8 {
         match (address & 0x00FF) as u8 {
+            // Joypad
             0x00 => {
                 self.joypad_input
             },
+            // Serial transfer
             0x01 => {
-                ((self.serial_transfer & 0xFF00) >> 2) as u8
+                ((self.serial_transfer & 0xFF00) >> 8) as u8
             },
             0x02 => {
                 (self.serial_transfer & 0x00FF) as u8
             },
+            // Timer and divider
             0x04 => {
                 self.divider
             },
@@ -92,75 +90,7 @@ impl IO {
             0x07 => {
                 self.timer_control
             },
-            0x10 => {
-                self.channel_1_sweep
-            },
-            0x11 => {
-                self.channel_1_length_timer_and_duty_cycle
-            },
-            0x12 => {
-                self.channel_1_volume_and_envolope
-            },
-            0x13 => {
-                self.channel_1_period_low
-            },
-            0x14 => {
-                self.channel_1_period_high_and_control
-            },
-            0x16 => {
-                self.channel_2_length_timer_and_duty_cycle
-            },
-            0x17 => {
-                self.channel_2_volume_and_envolope
-            },
-            0x18 => {
-                self.channel_2_period_low
-            },
-            0x19 => {
-                self.channel_2_period_high_and_control
-            },
-            0x1A => {
-                self.channel_3_dac_enable
-            },
-            0x1B => {
-                self.channel_3_length_timer
-            },
-            0x1C => {
-                self.channel_3_output_level
-            },
-            0x1D => {
-                self.channel_3_period_low
-            },
-            0x1E => {
-                self.channel_3_period_high_and_control
-            },
-            0x20 => {
-                self.channel_4_lenght_timer
-            },
-            0x21 => {
-                self.channel_4_volume_and_enveloper
-            },
-            0x22 => {
-                self.channel_4_frequency_and_randomness
-            },
-            0x23 => {
-                self.channel_4_control
-            },
-            0x17 => {
-                channel_2_volume_and_envolope
-            },
-            0x24 => {
-                self.master_volume_and_vin_panning
-            },
-            0x25 => {
-                self.sound_panning
-            },
-            0x26 => {
-                self.audio_master_control
-            },
-            0x30 => {
-                self.wave_pattern_ram[address - 0x30]
-            },
+            // LCD
             0x40 => {
                 self.lcd_control
             },
@@ -185,6 +115,7 @@ impl IO {
             0x45 => {
                 self.lyc_compare
             },
+            // Palettes
             0x47 => {
                 self.bg_palette_data
             },
@@ -194,6 +125,7 @@ impl IO {
             0x49 => {
                 self.obp1
             },
+            // Set to non zero to diasable boot ROM
             0x50 => {
                 self.disable_boot_rom
             },
@@ -203,6 +135,167 @@ impl IO {
         &mut self,
         address: u16,
         value: u8
+    ) {
+        match (address & 0x00FF) as u8 {
+            // Joypad
+            0x00 => {
+                self.joypad_input = value;
+            },
+            // Serial transfer
+            0x01 => {
+                self.serial_transfer = (
+                    (value as u16) << 8 |
+                    self.serial_transfer 0x00FF
+                );
+            },
+            0x02 => {
+                self.serial_transfer = (
+                    self.serial_transfer 0xFF00 |
+                    value as u16
+                );
+            },
+            // Timer and divider
+            0x04 => {
+                self.divider
+            },
+            0x05 => {
+                self.timer_counter
+            },
+            0x06 => {
+                self.timer_modulo
+            },
+            0x07 => {
+                self.timer_control
+            },
+            // LCD
+            0x40 => {
+                self.lcd_control
+            },
+            0x41 => {
+                self.lcd_status
+            },
+            0x42 => {
+                self.background_viewport_y
+            },
+            0x43 => {
+                self.background_viewport_x
+            },
+            0x44 => {
+                self.lcd_y_coordinate
+            },
+            0x4A => {
+                self.windoy_y_position
+            },
+            0x4B => {
+                self.window_x_position_plus_sept
+            },
+            0x45 => {
+                self.lyc_compare
+            },
+            // Palettes
+            0x47 => {
+                self.bg_palette_data
+            },
+            0x48 => {
+                self.obp0
+            },
+            0x49 => {
+                self.obp1
+            },
+            // Set to non zero to diasable boot ROM
+            0x50 => {
+                self.disable_boot_rom
+            },
+    }
+
+    pub fn press_button(&mut self, button: Joypad_button) {
+        // Was a button already being pushed
+        let was_pushed = self.joypat_input & 0x0F == 0x0F;
+        match button {
+            Joypad_button::START => {
+                self.joypad_input_ssba &= 0xF7;
+            },
+            Joypad_button::SELECT => {
+                self.joypad_input_ssba &= 0xFB;
+            },
+            Joypad_button::B => {
+                self.joypad_input_ssba &= 0xFD;
+            },
+            Joypad_button::A => {
+                self.joypad_input_ssba &= 0xFE;
+            },
+            Joypad_button::DOWN => {
+                self.joypad_input_movement &= 0xF7;
+            },
+            Joypad_button::UP => {
+                self.joypad_input_movement &= 0xFB;
+            },
+            Joypad_button::LEFT => {
+                self.joypad_input_movement &= 0xFD;
+            },
+            Joypad_button::RIGHT => {
+                self.joypad_input_movement &= 0xFE;
+            }
+        }
+        self.joypad_input |= 0x0F;
+        // If the movements keys are used
+        if self.joypad_input & 0x10 == 0x00 {
+            self.joypad_input &= self.joypad_input_movement;
+        }
+        // If the SSBA keys are being used
+        if self.joypad_input & 0x20 == 0x00 {
+            self.joypad_input &= self.joypad_input_ssba;
+        }
+        if !was_pushed {
+            self.send_joypad_interrupt();
+        }
+    }
+
+    fn send_joypad_interrupt(&mut self) {
+        self.pendingInterruption = true;
+    }
+
+    pub fn release_button(&mut self, button: Button) {
+        match button {
+            Joypad_button::START => {
+                self.joypad_input_ssba |= 0x08;
+            },
+            Joypad_button::SELECT => {
+                self.joypad_input_ssba |= 0x04;
+            },
+            Joypad_button::B => {
+                self.joypad_input_ssba |= 0x02;
+            },
+            Joypad_button::A => {
+                self.joypad_input_ssba |= 0x01;
+            },
+            Joypad_button::DOWN => {
+                self.joypad_input_movement |= 0x08;
+            },
+            Joypad_button::UP => {
+                self.joypad_input_movement |= 0x04;
+            },
+            Joypad_button::LEFT => {
+                self.joypad_input_movement |= 0x02;
+            },
+            Joypad_button::RIGHT => {
+                self.joypad_input_movement |= 0x01;
+            }
+        }
+        self.joypad_input |= 0x0F;
+        // If the movements keys are used
+        if self.joypad_input & 0x10 == 0x00 {
+            self.joypad_input &= self.joypad_input_movement;
+        }
+        // If the SSBA keys are being used
+        if self.joypad_input & 0x20 == 0x00 {
+            self.joypad_input &= self.joypad_input_ssba;
+        }
+    }
+
+    pub fn update(
+        &mut self,
+        n_ticks: u32
     ) {
     }
 }
