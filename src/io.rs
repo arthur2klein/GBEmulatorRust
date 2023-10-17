@@ -20,10 +20,11 @@ pub struct IO {
     joypad_input_ssba: u8,
     joypad_input_movement: u8,
     joypad_pending_interruption: bool
-    // Serial transfer
+    // Serial transfer (should not be used)
     serial_transfer: u16,
     // Timer and divider
     divider: u8,
+    cpu_cycle: u16,
     timer_counter: u8,
     timer_modulo: u8,
     timer_control: u8,
@@ -44,6 +45,9 @@ pub struct IO {
     obp1: u8,
     // Set to non zero to diasable boot ROM
     disable_boot_rom: u8,
+    // Interruptions
+    pub pending_joypad_interruption: bool,
+    pub pending_timer_interruption: bool,
 }
 
 impl IO {
@@ -70,7 +74,7 @@ impl IO {
             0x00 => {
                 self.joypad_input
             },
-            // Serial transfer
+            // Serial transfer (should not be used)
             0x01 => {
                 ((self.serial_transfer & 0xFF00) >> 8) as u8
             },
@@ -139,9 +143,13 @@ impl IO {
         match (address & 0x00FF) as u8 {
             // Joypad
             0x00 => {
-                self.joypad_input = value;
+                // The lower nible is read-only
+                self.joypad_input = (
+                    (self.joypad_input & 0x0F) |
+                    (value & 0xF0)
+                );
             },
-            // Serial transfer
+            // Serial transfer (should not be used)
             0x01 => {
                 self.serial_transfer = (
                     (value as u16) << 8 |
@@ -155,17 +163,18 @@ impl IO {
                 );
             },
             // Timer and divider
+            // Writing any value to it will set it to 0.
             0x04 => {
-                self.divider
+                self.divider = 0x00;
             },
             0x05 => {
-                self.timer_counter
+                self.timer_counter = value;
             },
             0x06 => {
-                self.timer_modulo
+                self.timer_modulo = value;
             },
             0x07 => {
-                self.timer_control
+                self.timer_control = value;
             },
             // LCD
             0x40 => {
@@ -251,10 +260,6 @@ impl IO {
         }
     }
 
-    fn send_joypad_interrupt(&mut self) {
-        self.pendingInterruption = true;
-    }
-
     pub fn release_button(&mut self, button: Button) {
         match button {
             Joypad_button::START => {
@@ -297,5 +302,71 @@ impl IO {
         &mut self,
         n_ticks: u32
     ) {
+        // The clock frequency of the CPU is 4194304 Hz
+        // The divider increment frequency is  16384 Hz (every 256 cycle)
+        let increment_divider = (
+            ((self.cpu_cycle & 0x00FF).wrapping_add(n_ticks)) & 0xFF00
+        ) >> 8;
+        self.divider.wrapping_add(increment_divider);
+        // The timer is incremented at the clock frequency specified by the TAC
+        // register (0xFF07)
+        if self.timer_control & 0x20 == 0x20 {
+            let increment_timer = match self.timer_control & 0x03 {
+                // Frequency: 4096 Hz (1024 cycles)
+                0 => {
+                    ((
+                        (self.cpu_cycle & 0x03FF).wrapping_add(n_ticks)
+                    ) & 0xFC00) >> 10
+                },
+                // Frequency: 262144 Hz (16 cycles)
+                1 => {
+                    ((
+                        (self.cpu_cycle & 0x000F).wrapping_add(n_ticks)
+                    ) & 0xFFF0) >> 4
+                },
+                // Frequency: 65536 Hz (64 cycles)
+                2 => {
+                    ((
+                        (self.cpu_cycle & 0x003F).wrapping_add(n_ticks)
+                    ) & 0xFFC0) >> 6
+                },
+                // Frequency: 16384 Hz (256 cycles)
+                3 => {
+                    ((
+                        (self.cpu_cycle & 0x00FF).wrapping_add(n_ticks)
+                    ) & 0xFF00) >> 8
+                },
+            }
+            let did_overflow, self.timer_counter = (
+                self.timer_counter.overflowing_add(increment_timer)
+            );
+            // When the value exceeds 0xFF, it is reet to the value specified in
+            // TMA (0xFF06) and an interrupt is requested.
+            if did_overflow {
+                self.timer_counter = self.timer_counter.wrapping_add(
+                    self.timer_modulo
+                );
+                self.send_timer_interrupt();
+            }
+        }
+
+        self.cpu_cycle.wrapping_add(n_ticks);
+    }
+
+    pub fn receive_stop(&mut self) {
+        self.divider = 0;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Interruptions
+    ///////////////////////////////////////////////////////////////////////////
+    fn send_joypad_interrupt(&mut self) {
+        // INT 0x60
+        self.pending_joypad_interruption = true;
+    }
+
+    fn send_timer_interrupt(&mut self) {
+        // INT 0x50
+        self.pending_timer_interruption = true;
     }
 }

@@ -1,4 +1,6 @@
 pub struct MMU {
+    /* Interrupt flag: unused/unused/unused/joypad/serial/timer/lcd/vblank */
+    interrupt_flag: u8,
     /* Register that controls the interrupts that are considered
      to be enabled and should be triggered. */
     ie: u8,
@@ -21,6 +23,7 @@ pub struct MMU {
 impl MMU {
     pub new() -> Self {
         Self {
+            interrupt_flag: 0x00,
             ie: 0x00,
             cartridge:, //TODO
             gpu: , //TODO
@@ -37,6 +40,9 @@ impl MMU {
     ) -> u8 {
         // https://gbdev.io/pandocs/Memory_Map.html
         match adress {
+            0xFF0F => {
+                self.interrupt_flag
+            },
             // 16 KiB ROM bank 00
             // From cartridge, usually a fixed bank
             0x0000..0x4000 => {
@@ -108,6 +114,9 @@ impl MMU {
     ) {
         // https://gbdev.io/pandocs/Memory_Map.html
         match adress {
+            0xFF0F => {
+                self.interrupt_flag = value;
+            },
             // 16 KiB ROM bank 00
             // From cartridge, usually a fixed bank
             0x0000..0x4000 => {
@@ -228,6 +237,15 @@ impl MMU {
 
     pub fn update(&mut self, n_cycles: u32) {
         io.update(n_cycles);
+        // INT 0x60
+        // TODO https://gbdev.io/pandocs/Interrupts.html
+        if io.pending_joypad_interruption {
+            self.interrupt_flag |= 0x10;
+        }
+        // INT 0x50
+        if io.pending_timer_interruption {
+            self.interrupt_flag |= 0x04;
+        }
     }
 
     pub fn receive_stop(&mut self) {
