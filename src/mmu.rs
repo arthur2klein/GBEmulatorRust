@@ -21,11 +21,11 @@ pub struct MMU {
 }
 
 impl MMU {
-    pub new() -> Self {
+    pub new(cartridge_path: &str) -> Self {
         Self {
             interrupt_flag: 0x00,
             ie: 0x00,
-            cartridge:, //TODO
+            cartridge: Cartridge::new(cartridge_path),
             gpu: , //TODO
             wram: , //TODO
             hram: , //TODO

@@ -79,7 +79,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// ```
     fn new() -> Self {
         Registers {
@@ -106,7 +106,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.b = 0x12;
     /// new_registers.c = 0x34;
     /// assert_eq!(new_registers.get_bc(), 0x1234);
@@ -126,7 +126,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.set_bc(0x1234);
     /// assert_eq!(new_registers.b, 0x12);
     /// assert_eq!(new_registers.c, 0x34);
@@ -146,7 +146,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.a = 0x12;
     /// new_registers.f = 0x34;
     /// assert_eq!(new_registers.get_af(), 0x1234);
@@ -166,7 +166,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.set_af(0x1234);
     /// assert_eq!(new_registers.a, 0x12);
     /// assert_eq!(new_registers.f, 0x34);
@@ -186,7 +186,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.d = 0x12;
     /// new_registers.e = 0x34;
     /// assert_eq!(new_registers.get_de(), 0x1234);
@@ -206,7 +206,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.set_de(0x1234);
     /// assert_eq!(new_registers.d, 0x12);
     /// assert_eq!(new_registers.e, 0x34);
@@ -226,7 +226,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.h = 0x12;
     /// new_registers.l = 0x34;
     /// assert_eq!(new_registers.get_hl(), 0x1234);
@@ -246,7 +246,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.set_hl(0x1234);
     /// assert_eq!(new_registers.h, 0x12);
     /// assert_eq!(new_registers.l, 0x34);
@@ -266,7 +266,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.h = 0x12;
     /// new_registers.l = 0x34;
     /// // The current value is still returned
@@ -290,7 +290,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.h = 0x12;
     /// new_registers.l = 0x34;
     /// // The current value is still returned
@@ -313,7 +313,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// // Sets the carry flag
     /// new_registers.f = 0x10;
     /// assert!(new_registers.get_carry());
@@ -331,7 +331,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.set_carry(true);
     /// // Only the carry flag has been set
     /// assert_eq!(new_registers.f, 0x10);
@@ -354,7 +354,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// // Sets the half carry flag
     /// new_registers.f = 0x20;
     /// assert!(new_registers.get_half());
@@ -373,7 +373,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.set_half(true);
     /// // Only the half carry flag has been set
     /// assert_eq!(new_registers.f, 0x20);
@@ -396,7 +396,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// // Sets the substraction flag
     /// new_registers.f = 0x40;
     /// assert!(new_registers.get_sub());
@@ -415,7 +415,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.set_sub(true);
     /// // Only the substraction has been set
     /// assert_eq!(new_registers.f, 0x40);
@@ -438,7 +438,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// // Sets the zero flag
     /// new_registers.f = 0x80;
     /// assert!(new_registers.get_zero());
@@ -457,7 +457,7 @@ impl Registers {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = Registers::new();
+    /// let mut new_registers = Registers::new();
     /// new_registers.set_zero(true);
     /// // Only the zero has been set
     /// assert_eq!(new_registers.f, 0x80);
@@ -485,12 +485,12 @@ impl CPU {
     ///
     /// # Examples
     /// ``` rust
-    /// let new_registers = CPU::new();
+    /// let mut new_cpu = CPU::new("test.gb");
     /// ```
-    pub fn new() -> Self {
+    pub fn new(cartridge_path: &str) -> Self {
         CPU{
             registers: Register::new(),
-            mmu: MMU::new(),
+            mmu: MMU::new(cartridge_path),
             is_halted: false,
             ei: 0,
             di: 0,
@@ -4269,6 +4269,26 @@ impl CPU {
         result
     }
 
+    /// Sets the zero flag depending of the value of the given bit of the
+    /// second argument
+    ///
+    /// Sets the Z flag iff the bit-th bit of value is 0b0
+    /// Always resets the N flag
+    /// Always sets the H flag
+    /// Does not affect the C flag
+    ///
+    /// # Arguments
+    /// **bit (u32)**: Position of the bit to test
+    /// **value (u8)**: Value to test
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// assert!(new_cpu.get_zero());
+    /// new_cpu.registers.a = 0x02;
+    /// new_cpu.bit(2, new_cpu.regiters.a);
+    /// assert!(!new_cpu.get_zero());
+    /// ```
     fn bit(&mut self, bit: u32, value: u8) {
         self.registers.set_zero(
             value & ((1 << bit) as u8) == 0;
@@ -4276,16 +4296,53 @@ impl CPU {
         self.registers.set_sub(
             false
         );
-        self.registers.set_halr(
+        self.registers.set_half(
             true
         );
         // Carry not affected
     }
 
+    /// Returns the given value but the bit whose position is given in argument
+    /// is reset
+    ///
+    /// # Arguments
+    /// **bit (u32)**: Position of the bit to reset in the value (0 being the
+    /// LSB)
+    /// **value (u8)**: Value that will be modified
+    ///
+    /// # Returns
+    /// **u8**: Initial value with the given bit reset
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0x04;
+    /// let res = new_cpu.res(2, new_cpu.registers.a);
+    /// assert_eq!(res, 0x00);
+    /// ```
     fn res(&mut self, bit: u32, value: u8) {
         value & !((1 << bit) as u8)
     }
 
+    /// Returns the given value but the bit whose position is given in argument
+    /// is set
+    ///
+    /// # Arguments
+    /// **bit (u32)**: Position of the bit to set in the value (0 being the
+    /// LSB)
+    /// **value (u8)**: Value that will be modified
+    ///
+    /// # Returns
+    /// **u8**: Initial value with the given bit set
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// // Initially the A registers contains the value 0
+    /// assert_eq!(new_cpu.registers.a, 0x00);
+    /// let res = new_cpu.set(2, new_cpu.registers.a);
+    /// assert_eq!(res, 0x04);
+    /// ```
     fn set(&mut self, bit: u32, value: u8) {
         value | ((1 << bit) as u8)
     }

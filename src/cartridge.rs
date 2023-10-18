@@ -5,8 +5,15 @@ pub struct Cartridge {
 
 impl Cartridge {
     pub fn new(
+        file_path: &str
     ) -> Self {
-        // TODO
+        let file = File::open(file_path).expect("Cannot read the cartridge.");
+        let mut rom: Vec<u8> = Vec::new();
+        file.read_to_end(&mut rom);
+        Self {
+            rom,
+            ram: vec![0;0x2000],
+        }
     }
 
     pub fn read_rom(&self, adress: u16) -> u8 {

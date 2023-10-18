@@ -53,21 +53,10 @@ pub struct IO {
 impl IO {
     pub fn new() -> Self {
         Self {
+            // TODO
         }
     }
     
-    fn get_joypad_input(&self) -> u8 {
-        self.read(0);
-    }
-
-    fn get_serial_transfer(&self) -> u16 {
-        self.read(1) as u16 << 8 | self.read(2)
-    }
-
-    fn get_divider(&self) -> u8 {
-        
-    }
-
     pub fn read(&self, address: u16) -> u8 {
         match (address & 0x00FF) as u8 {
             // Joypad
@@ -213,7 +202,7 @@ impl IO {
             },
             // Set to non zero to diasable boot ROM
             0x50 => {
-                self.disable_boot_rom
+                self.disable_boot_rom = value;
             },
     }
 
