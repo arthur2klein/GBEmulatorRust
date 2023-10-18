@@ -3479,7 +3479,7 @@ impl CPU {
         }
     }
 
-    pub fn execute_step(&mut self) -> u32 {
+    fn update_emi(&mut self) {
         match self.di {
             2 => {
                 self.di = 1;
@@ -3498,13 +3498,48 @@ impl CPU {
                 self.emi = true;
             }
         }
+    }
+
+    fn manage_interruptions(&mut self) -> u32 {
         if self.ime {
+            // if io.pending_joypad_interruption
+            if (
+                mmu.interrupt_flag & 0x10 == 0x10 &&
+                mmu.ie & 0x10 == 0x10
+            ) {
+                mmu.interrupt_flag |= 0xEF;
+                mmu.ie |= 0xEF;
+                // 2 NOP + PUSH PC
+                self.rst(0x0060);
+                return 20;
+            }
+            // if io.pending_timer_interruption
+            if (
+                mmu.interrupt_flag & 0x04 == 0x04 &&
+                mmu.ie & 0x04 == 0x04
+            ) {
+                mmu.interrupt_flag |= 0xF7;
+                mmu.ie |= 0xF7;
+                // 2 NOP + PUSH PC + LD PC 0x50
+                self.rst(0x0050);
+                return 20;
+            }
+            // TODO: Interrputions related to graphics
         }
-        // TODO: manage interruptions
+        // If 0 is return, no interruptions should be called
+        0
+    }
+
+    pub fn execute_step(&mut self) -> u32 {
+        self.update_emi();
+        let time_interruption = self.manage_interruptions();
+        if time_interruption != 0 {
+            return time_interruption;
+        }
         if self.is_halted {
             return 4;
         }
-        return self.receiveOp();
+        self.receiveOp()
     }
 
     // Fonctions arithmétiques

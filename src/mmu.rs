@@ -99,8 +99,8 @@ impl MMU {
             0xFF80..0xFFFF => {
                 self.hram.read(adress)
             }
-            // Interrubp Enable register
-            //
+            // Interrupt Enable register
+            // unused/unused/unused/joypad/serial/timer/lcd/vblank
             0xFFFF => {
                 self.ie
             }
@@ -235,16 +235,20 @@ impl MMU {
         );
     }
 
-    pub fn update(&mut self, n_cycles: u32) {
+    pub fn update(
+        &mut self,
+        n_cycles: u32,
+    ) {
         io.update(n_cycles);
         // INT 0x60
-        // TODO https://gbdev.io/pandocs/Interrupts.html
         if io.pending_joypad_interruption {
             self.interrupt_flag |= 0x10;
+            io.pending_joypad_interruption = false;
         }
         // INT 0x50
         if io.pending_timer_interruption {
             self.interrupt_flag |= 0x04;
+            io.pending_timer_interruption = false;
         }
     }
 
