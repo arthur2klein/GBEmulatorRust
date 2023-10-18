@@ -1,34 +1,67 @@
 // Le CPU de la Game Boy est un CPU a 8 bits, ce qui signifie que chacun de ses 
 // registres peut contenir 8 bits.
 
+macro_rules! form_16_bits_register {
+    ($register1: ident, $register2: ident) => {
+        fn get_$register1$register2(&self) -> u16 {
+            (self.$register1 as u16) << 8
+                | self.$register2 as u16
+        }
+
+        fn set_$register1$register2(&mut self, value: u16) {
+            self.$register1 = ((value & 0xFF00) >> 8) as u8;
+            self.$register2 = (value & 0xFF) as u8;
+        }
+    }
+}
+
 /* ---------------------------------------------------------------------------*/
 
 //Definition des structs
 
+/// The CPU of the gameboy
 pub struct CPU {
+    /// The registers used by the CPU to store values
     registers: Register,
-    flags: FlagRegister,
-    // to do in a separated file
+    /// The memory management unit allows the CPU to communicate with the
+    /// memory
     mmu: MMU,
+    /// Stops the CPU until an interruption is pending
     is_halted: bool,
-    // If 1, enable interrupts ; if 2, enable interrupts after next instruction
+    /// Enable interruptions
+    /// If 1, enable interruptions ; if 2, enable interruptions after next
+    /// instruction
     ei: u32,
-    // If 2, disable interrputs after next instruction
+    /// Disable interrputions
+    /// If 1, disable interruptions ; if 2, disable interruptons after next
+    /// instruction
     di: u32,
+    /// Should pending interrpution be managed?
     emi: bool,
 }
 
 
+/// The registers used by the CPU to store values
 struct Registers {
+    /// 8 bit A register
     a: u8,
+    /// 8 bit B register
     b: u8,
+    /// 8 bit D register
     c: u8,
+    /// 8 bit D register
     d: u8,
+    /// 8 bit E register
     e: u8,
+    /// 8 bit F register
     f: u8,
+    /// 8 bit H register
     h: u8,
+    /// 8 bit L register
     l: u8,
+    /// 16 bit Program Counter register
     pc: u16,
+    /// 16 bit Stack Pointer register
     sp: u16,
 }
 
@@ -38,6 +71,16 @@ struct Registers {
 
 impl Registers {
 
+    /// Create the registers with their initial values
+    ///
+    /// # Returns
+    /// 
+    /// **Register**: New instance of Registers
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// ```
     fn new() -> Self {
         Registers {
             a: 0x01,
@@ -45,6 +88,7 @@ impl Registers {
             c: 0x13,
             d: 0x00,
             e: 0xD8,
+            f: 0x00,
             h: 0x01,
             l: 0x4D,
             pc: 0x0100,
@@ -52,63 +96,246 @@ impl Registers {
         }
     }
 
+    /// Returns the value of the 16 bit register BC
+    ///
+    /// The value of BC is obtained by reading the bits of B and then those of
+    /// C
+    ///
+    /// # Returns
+    /// **u16**: Value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.b = 0x12;
+    /// new_registers.c = 0x34;
+    /// assert_eq!(new_registers.get_bc(), 0x1234);
+    /// ```
     fn get_bc(&self) -> u16 {
         (self.b as u16) << 8
             | self.c as u16
     }
 
+    /// Sets the value of the 16 bit register BC
+    ///
+    /// The value of BC is obtained by reading the bits of B and then those of
+    /// C
+    ///
+    /// # Arguments
+    /// **value (u16)**: New value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.set_bc(0x1234);
+    /// assert_eq!(new_registers.b, 0x12);
+    /// assert_eq!(new_registers.c, 0x34);
+    /// ```
     fn set_bc(&mut self, value: u16) {
         self.b = ((value & 0xFF00) >> 8) as u8;
         self.c = (value & 0xFF) as u8;
     }
 
+    /// Returns the value of the 16 bit register AF
+    ///
+    /// The value of AF is obtained by reading the bits of A and then those of
+    /// F
+    ///
+    /// # Returns
+    /// **u16**: Value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.a = 0x12;
+    /// new_registers.f = 0x34;
+    /// assert_eq!(new_registers.get_af(), 0x1234);
+    /// ```
     fn get_af(&self) -> u16 {
         (self.a as u16) << 8
             | self.f as u16
     }
 
+    /// Sets the value of the 16 bit register AF
+    ///
+    /// The value of AF is obtained by reading the bits of A and then those of
+    /// F
+    ///
+    /// # Arguments
+    /// **value (u16)**: New value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.set_af(0x1234);
+    /// assert_eq!(new_registers.a, 0x12);
+    /// assert_eq!(new_registers.f, 0x34);
+    /// ```
     fn set_af(&mut self, value: u16) {
         self.a = ((value & 0xFF00) >> 8) as u8;
         self.f = (value & 0xFF) as u8;
     }
 
+    /// Returns the value of the 16 bit register DE
+    ///
+    /// The value of DE is obtained by reading the bits of D and then those of
+    /// E
+    ///
+    /// # Returns
+    /// **u16**: Value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.d = 0x12;
+    /// new_registers.e = 0x34;
+    /// assert_eq!(new_registers.get_de(), 0x1234);
+    /// ```
+    fn get_de(&self) -> u16 {
+        (self.d as u16) << 8
+            | self.e as u16
+    }
+
+    /// Sets the value of the 16 bit register BC
+    ///
+    /// The value of DE is obtained by reading the bits of D and then those of
+    /// E
+    ///
+    /// # Arguments
+    /// **value (u16)**: New value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.set_de(0x1234);
+    /// assert_eq!(new_registers.d, 0x12);
+    /// assert_eq!(new_registers.e, 0x34);
+    /// ```
+    fn set_de(&mut self, value: u16) {
+        self.d = ((value & 0xFF00) >> 8) as u8;
+        self.e = (value & 0xFF) as u8;
+    }
+
+    /// Returns the value of the 16 bit register HL
+    ///
+    /// The value of HL is obtained by reading the bits of H and then those of
+    /// L
+    ///
+    /// # Returns
+    /// **u16**: Value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.h = 0x12;
+    /// new_registers.l = 0x34;
+    /// assert_eq!(new_registers.get_hl(), 0x1234);
+    /// ```
     fn get_hl(&self) -> u16 {
         (self.h as u16) << 8
             | self.l as u16
     }
 
+    /// Sets the value of the 16 bit register HL
+    ///
+    /// The value of HL is obtained by reading the bits of H and then those of
+    /// L
+    ///
+    /// # Arguments
+    /// **value (u16)**: New value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.set_hl(0x1234);
+    /// assert_eq!(new_registers.h, 0x12);
+    /// assert_eq!(new_registers.l, 0x34);
+    /// ```
     fn set_hl(&mut self, value: u16) {
         self.h = ((value & 0xFF00) >> 8) as u8;
         self.l = (value & 0xFF) as u8;
     }
 
+    /// Returns the current value of the 16 bit register HL and decrement it
+    ///
+    /// The value of HL is obtained by reading the bits of H and then those of
+    /// L
+    ///
+    /// # Returns
+    /// **u16**: Current value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.h = 0x12;
+    /// new_registers.l = 0x34;
+    /// // The current value is still returned
+    /// assert_eq!(new_registers.get_hld(), 0x1234);
+    /// // But it is changed for the next evaluation
+    /// assert_eq!(new_registers.get_hl(), 0x1233);
+    /// ```
     fn get_hld(&self) -> u16 {
         let res = self.get_hl();
         self.set_hl(res - 1);
         res
     }
 
+    /// Returns the current value of the 16 bit register HL and increment it
+    ///
+    /// The value of HL is obtained by reading the bits of H and then those of
+    /// L
+    ///
+    /// # Returns
+    /// **u16**: Current value of the 16 bit register.
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.h = 0x12;
+    /// new_registers.l = 0x34;
+    /// // The current value is still returned
+    /// assert_eq!(new_registers.get_hli(), 0x1234);
+    /// // But it is changed for the next evaluation
+    /// assert_eq!(new_registers.get_hl(), 0x1235);
+    /// ```
     fn get_hli(&mut self, value: u16) {
         let res = self.get_hl();
         self.set_hl(res + 1);
         res
     }
 
-    fn get_de(&self) -> u16 {
-        (self.d as u16) << 8
-            | self.e as u16
-    }
-
-    fn set_de(&mut self, value: u16) {
-        self.d = ((value & 0xFF00) >> 8) as u8;
-        self.e = (value & 0xFF) as u8;
-    }
-
-    // C flag
+    /// Returns the value of the carry flag (aka C flag)
+    ///
+    /// The carry flag is generally set when the previous operation overflows
+    ///
+    /// # Returns
+    /// **bool**: true iff the carry flag is set
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// // Sets the carry flag
+    /// new_registers.f = 0x10;
+    /// assert!(new_registers.get_carry());
+    /// ```
     fn get_carry(&self) -> bool {
         self.f & 0b00010000 != 0
     }
 
+    /// Assigns the wanted value to the carry flag (aka C flag)
+    ///
+    /// The carry flag is generally set when the previous operation overflows
+    ///
+    /// # Arguments
+    /// **value (bool)**: true iff you want the carry flag is to be set
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.set_carry(true);
+    /// // Only the carry flag has been set
+    /// assert_eq!(new_registers.f, 0x10);
+    /// ```
     fn set_carry(&self, value: bool) {
         if value {
             self.f |= 0b00010000;
@@ -117,11 +344,40 @@ impl Registers {
         }
     }
 
-    // H flag
+    /// Returns the value of the half carry flag (aka H flag)
+    ///
+    /// The half carry flag is generally set when the previous operation
+    /// overflows considering only the first half of the operators
+    ///
+    /// # Returns
+    /// **bool**: true iff the half carry flag is set
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// // Sets the half carry flag
+    /// new_registers.f = 0x20;
+    /// assert!(new_registers.get_half());
+    /// ```
     fn get_half(&self) -> bool {
         self.f & 0b00100000 != 0
     }
 
+    /// Assigns the wanted value to the half carry flag (aka H flag)
+    ///
+    /// The half carry flag is generally set when the previous operation
+    /// overflows considering only the first half of the operators
+    ///
+    /// # Arguments
+    /// **value (bool)**: true iff you want the half carry flag is to be set
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.set_half(true);
+    /// // Only the half carry flag has been set
+    /// assert_eq!(new_registers.f, 0x20);
+    /// ```
     fn set_half(&self, value: bool) {
         if value {
             self.f |= 0b00100000;
@@ -130,11 +386,40 @@ impl Registers {
         }
     }
 
-    // N flag
+    /// Returns the value of the substraction flag (aka N flag)
+    ///
+    /// The substraction flag is generally set when the previous operation is
+    /// a substraction
+    ///
+    /// # Returns
+    /// **bool**: true iff the substraction flag is set
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// // Sets the substraction flag
+    /// new_registers.f = 0x40;
+    /// assert!(new_registers.get_sub());
+    /// ```
     fn get_sub(&self) -> bool {
         self.f & 0b01000000 != 0
     }
 
+    /// Assigns the wanted value to the substraction flag (aka N flag)
+    ///
+    /// The substraction flag is generally set when the previous operation is
+    /// a substraction
+    ///
+    /// # Arguments
+    /// **value (bool)**: true iff you want the substaction flag is to be set
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.set_sub(true);
+    /// // Only the substraction has been set
+    /// assert_eq!(new_registers.f, 0x40);
+    /// ```
     fn set_sub(&self, value: bool) {
         if value {
             self.f |= 0b01000000;
@@ -143,11 +428,40 @@ impl Registers {
         }
     }
 
-    // Z flag
+    /// Returns the value of the zero flag (aka Z flag)
+    ///
+    /// The zero flag is generally set when the result of the previous
+    /// operation is 0
+    ///
+    /// # Returns
+    /// **bool**: true iff the zero flag is set
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// // Sets the zero flag
+    /// new_registers.f = 0x80;
+    /// assert!(new_registers.get_zero());
+    /// ```
     fn get_zero(&self) -> bool {
         self.f & 0b10000000 != 0
     }
 
+    /// Assigns the wanted value to the zero flag (aka Z flag)
+    ///
+    /// The zero flag is generally set when the result of the previous
+    /// operation is 0
+    ///
+    /// # Arguments
+    /// **value (bool)**: true iff you want the zero flag is to be set
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = Registers::new();
+    /// new_registers.set_zero(true);
+    /// // Only the zero has been set
+    /// assert_eq!(new_registers.f, 0x80);
+    /// ```
     fn set_zero(&self, value: bool) {
         if value {
             self.f |= 0b10000000;
@@ -163,6 +477,16 @@ impl Registers {
 
 impl CPU {
 
+    /// Create the CPU of the gameboy
+    ///
+    /// # Returns
+    /// 
+    /// **CPU**: New instance of CPU
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let new_registers = CPU::new();
+    /// ```
     pub fn new() -> Self {
         CPU{
             registers: Register::new(),
@@ -174,8 +498,6 @@ impl CPU {
         }
     }
 
-    // Commuication avec mmu
-    // MMU functions read_byte, read_word, write_byte, write_word, switch_speed
     fn fetchbyte(&mut self) -> u8 {
         let res = self.mmu.read_byte(self.reg.pc);
         self.reg.pc = self.registers.pc.wrapping_add(1);
