@@ -75,21 +75,21 @@ pub struct CPU {
 
 /// The registers used by the CPU to store values
 struct Registers {
-    /// 8 bit A register
+    /// 8 bit register A 
     a: u8,
-    /// 8 bit B register
+    /// 8 bit register B
     b: u8,
-    /// 8 bit D register
+    /// 8 bit register C
     c: u8,
-    /// 8 bit D register
+    /// 8 bit register D
     d: u8,
-    /// 8 bit E register
+    /// 8 bit register E
     e: u8,
-    /// 8 bit F register
+    /// 8 bit register F
     f: u8,
-    /// 8 bit H register
+    /// 8 bit register H
     h: u8,
-    /// 8 bit L register
+    /// 8 bit register L
     l: u8,
     /// 16 bit Program Counter register
     pc: u16,
