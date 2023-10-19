@@ -1,13 +1,45 @@
-// Le CPU de la Game Boy est un CPU a 8 bits, ce qui signifie que chacun de ses 
-// registres peut contenir 8 bits.
+use std::time::{Duration, SystemTime};
+use std::thread::sleep;
 
+/// This macro creates accessors for the 16 bit register obtained by combining
+/// the two given 8 bits register
 macro_rules! form_16_bits_register {
     ($register1: ident, $register2: ident) => {
+        /// Returns the value of the 16 bit register $register1$register2
+        ///
+        /// The value of $register1$register2 is obtained by reading the bits
+        /// of $register1 and then those of $register2
+        ///
+        /// # Returns
+        /// **u16**: Value of the 16 bit register.
+        ///
+        /// # Examples
+        /// ``` rust
+        /// let mut new_registers = Registers::new();
+        /// new_registers.$register1 = 0x12;
+        /// new_registers.$register2 = 0x34;
+        /// assert_eq!(new_registers.get_$register1$register2(), 0x1234);
+        /// ```
         fn get_$register1$register2(&self) -> u16 {
             (self.$register1 as u16) << 8
                 | self.$register2 as u16
         }
 
+        /// Sets the value of the 16 bit register $register1$register2
+        ///
+        /// The value of $register1$register2 is obtained by reading the bits
+        /// of $register1 and then those of $register2
+        ///
+        /// # Arguments
+        /// **value (u16)**: New value of the 16 bit register.
+        ///
+        /// # Examples
+        /// ``` rust
+        /// let mut new_registers = Registers::new();
+        /// new_registers.set_$register1$regiser2(0x1234);
+        /// assert_eq!(new_registers.$register1, 0x12);
+        /// assert_eq!(new_registers.$register2, 0x34);
+        /// ```
         fn set_$register1$register2(&mut self, value: u16) {
             self.$register1 = ((value & 0xFF00) >> 8) as u8;
             self.$register2 = (value & 0xFF) as u8;
@@ -498,26 +530,86 @@ impl CPU {
         }
     }
 
+    /// Gets an immediate value as a byte in the instructions of the code
+    ///
+    /// # Retuns
+    /// **u8**: Byte read in the code of the program
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.mmu.write_byte(
+    ///     new_cpu.registers.pc,
+    ///     0x12
+    /// );
+    /// assert_eq!(new_cpu.fetchbyte(), 0x12);
+    /// ```
     fn fetchbyte(&mut self) -> u8 {
         let res = self.mmu.read_byte(self.reg.pc);
         self.reg.pc = self.registers.pc.wrapping_add(1);
         res
     }
 
+    /// Gets an immediate value as a word in the instructions of the code
+    ///
+    /// # Retuns
+    /// **u8**: Word read in the code of the program
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.mmu.write_word(
+    ///     new_cpu.registers.pc,
+    ///     0x1234
+    /// );
+    /// assert_eq!(new_cpu.fetchword(), 0x1234);
+    /// ```
     fn fetchword(&mut self) -> u8 {
         let res = self.mmu.read_word(self.reg.pc);
         self.reg.pc = self.registers.pc.wrapping_add(2);
         res
     }
 
+    /// Sends a stop message to the MMU
+    ///
+    /// Switch the speed of the Memory Management Unit
+    ///
+    /// # Examples
+    /// ``` rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// assert!(!new_cpu.mmu.is_double_speed);
+    /// new_cpu.send_stop();
+    /// assert!(new_cpu.mmu.is_double_speed);
+    /// ```
     fn send_stop(&mut self) {
         self.mmu.receive_stop();
     }
 
+    /// Stops the gameboy until an interruption is triggered
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// // Deactivate interruption
+    /// new_cpu.emi = false;
+    /// new_cpu.halt();
+    /// // Now the CPU will only execute NOP
+    /// ```
     fn halt(&mut self) {
         self.is_halted = true;
     }
 
+    /// Pops a value from the stack
+    ///
+    /// # Returns
+    /// **u16**: value popped from the stack
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.push(0x1234);
+    /// assert_eq!(new_cpu.pop(), 0x1234);
+    /// ```
     fn pop(&mut self) -> u16 {
         let res = self.mmu.read_word(
             self.registers.sp
@@ -526,6 +618,17 @@ impl CPU {
         res
     }
 
+    /// Pushes the given value in the stack
+    ///
+    /// # Arguments
+    /// **value (u16)**: value to push in the stack
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.push(0x1234);
+    /// assert_eq!(new_cpu.pop(), 0x1234);
+    /// ```
     fn push(&mut self, value: u16) {
         self.registers.sp = self.registers.sp.wrapping_sub(2);
         self.mmu.write_word(
@@ -534,11 +637,37 @@ impl CPU {
         );
     }
 
+    /// Jumps to the given value after pushing the value of the program counter
+    /// in the stack
+    ///
+    /// # Arguments
+    /// **value (u16)**: new value of the program counter
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.rst(0x0060);
+    /// assert_eq!(new_cpu.registers.pc, 0x0060);
+    /// ```
     fn rst(&mut self, value: u16) {
         self.push(self.registers.pc);
         self.registers.pc = value;
     }
 
+    /// Jumps by the value of the next immediate in the program read as a real
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// let before = new_cpu.registers.get_pc();
+    /// // Normally the adress should already be written in test.gb
+    /// new_cpu.mmu.write_byte(
+    ///     new_cpu.registers.pc + 1,
+    ///     0x12
+    /// );
+    /// new_cpu.jr();
+    /// assert_eq!(new_cpu.registers.pc - before, 0x12);
+    /// ```
     fn jr(&mut self) {
         // Les conversions permettent d'assurer que fetchbyte est considéré
         // comme signé, mais pas pc, que l'opérations puissnet avoir lieu, et
@@ -549,9 +678,38 @@ impl CPU {
         ) as u16;
     }
 
-    // Lecture des OpCodes
+    /// Make the CPU work indefinitively
+    ///
+    /// # Examples
+    /// ```rust
+    /// let new_cpu = CPU::new("test.gb");
+    /// // Let's hope the cartridge "test.gb" contains something
+    /// new_cpu.work();
+    /// ```
+    pub fn work(&mut self) {
+        loop {
+            let time = SystemTime::now();
+            let time_used = self.execute_step();
+            // One cycle lasts 2385ns
+            sleep(
+                Duration::from_nanos(2385 * time_used) -
+                time.elapsed().unwrap()
+            );
+        }
+    }
 
-    // Returns the duration in cycles
+    /// Reads an instruction and execute it from the normal table
+    ///
+    /// https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
+    ///
+    /// # Returns
+    /// **u32**: Number of cycles used for the step
+    ///
+    /// # Examples
+    /// ```rust
+    /// let new_cpu = CPU::new("test.gb");
+    /// new_cpu.receiveOp();
+    /// ```
     fn receiveOp(&mut self) -> u32 {
         let op = self.fetchbyte();
         match op {
@@ -682,7 +840,7 @@ impl CPU {
             0x15 => {
                 self.registers.d = self.dec(self.registers.d);
                 4
-            ),
+            },
             // LD D, d8
             0x16 => {
                 self.registers.d = self.fetchbyte();
@@ -2190,6 +2348,18 @@ impl CPU {
         }
     }
 
+    /// Reads an instruction and execute it from the CB table
+    ///
+    /// https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
+    ///
+    /// # Returns
+    /// **u32**: Number of cycles used for the step
+    ///
+    /// # Examples
+    /// ```rust
+    /// let new_cpu = CPU::new("test.gb");
+    /// new_cpu.call_cb();
+    /// ```
     fn call_cb(&mut self) -> u32 {
         let op = self.fetchbyte();
         match op {
@@ -3801,6 +3971,22 @@ impl CPU {
         }
     }
 
+    /// Updates the value of emi
+    ///
+    /// Activate interruption handing 1 instruction after ei.  
+    /// Deactivate interruption handing 1 instruction after di.  
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.di = 2;
+    /// // emi is not deactivated after one update
+    /// new_cpu.update_emi();
+    /// assert!(new_cpu.emi);
+    /// // emi is deactivated after the second update
+    /// new_cpu.update_emi();
+    /// assert!(!new_cpu.emi);
+    /// ```
     fn update_emi(&mut self) {
         match self.di {
             2 => {
@@ -3822,6 +4008,26 @@ impl CPU {
         }
     }
 
+    /// Checks for interruption and handle them
+    ///
+    /// If the cpu wants to handle interruption(ime = 1), if the interrupt
+    /// flag and the corresponding interrupt enable is set, the program counter
+    /// is moved to the interruption handler.
+    ///
+    /// # Returns
+    /// **u32**: Number of cycles used to handle interruptions (0 if not
+    /// handled).
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// // Artificially create a joypad interruption
+    /// new_cpu.mmu.interrupt_flag = 0x10;
+    /// new_cpu.mmu.ie = 0x10;
+    /// new_cpu.ime = true;
+    /// assert_eq!(new_cpu.manage_interruptions(), 20);
+    /// // A joypad interruption moves the program counter to the adress 0x0060
+    /// assert_eq!(new_cpu.registers.get_pc(), 0x0060);
     fn manage_interruptions(&mut self) -> u32 {
         if self.ime {
             // if io.pending_joypad_interruption
@@ -3852,19 +4058,47 @@ impl CPU {
         0
     }
 
+    /// Execute one CPU step
+    ///
+    /// Update and mange interruption, and execute one instruction if no
+    /// interruption are found
+    ///
+    /// # Returns
+    /// **u32**: Number of CPU cycles used for the step
     pub fn execute_step(&mut self) -> u32 {
         self.update_emi();
         let time_interruption = self.manage_interruptions();
         if time_interruption != 0 {
+            mmu.update(time_interruptions);
             return time_interruption;
         }
         if self.is_halted {
+            mmu.update(4);
             return 4;
         }
-        self.receiveOp()
+        let res = self.receiveOp();
+        mmu.update(res);
+        res
     }
 
-    // Fonctions arithmétiques
+    /// Returns the given value incremented
+    ///
+    /// Sets the Z flag iff the result is zero  
+    /// Sets the H flag iff the lower nybble has a carry
+    /// Always resets the N flag
+    /// Does not affect the C flag
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to increment
+    ///
+    /// # Returns
+    /// **u8**: Parameter's value incremented
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU_new("test.gb");
+    /// assert_eq!(new_cpu.dec(0x01), 0x02);
+    /// ```
     fn inc(&mut self, value: u8) -> u8 {
         let res = value.wrapping_add(1);
         self.registers.set_zero(
@@ -3881,6 +4115,24 @@ impl CPU {
         res
     }
 
+    /// Returns the given value decremented
+    ///
+    /// Sets the Z flag iff the result is zero  
+    /// Sets the H flag iff the lower nybble takes a borrow  
+    /// Always sets the N flag
+    /// Does not affect the C flag
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to decrement
+    ///
+    /// # Returns
+    /// **u8**: Parameter's value decremented
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU_new("test.gb");
+    /// assert_eq!(new_cpu.dec(0x02), 0x01);
+    /// ```
     fn dec(&mut self, value: u8) -> u8 {
         let res = value.wrapping_sub(1);
         self.registers.set_zero(
@@ -3891,12 +4143,30 @@ impl CPU {
             (value & 0x0F) == 0x00
         );
         self.registers.set_sub(
-            false
+            true
         );
         // Pas de maj du carry
         res
     }
 
+    /// Add the value of the A register with the given value
+    ///
+    /// Always resets the N flag  
+    /// Sets the C flag iff there is an overflow
+    /// Sets the H falg iff there is a carry on bit 4  
+    /// Sets the z flag iff the result is zero
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value added to A
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0x12;
+    /// new_cpu.add(0x34);
+    /// // 0x12 + 0x34 = 0x46
+    /// assert_eq!(new_cpu.registers.a, 0x46);
+    /// ```
     fn add(&mut self, value: u8) {
         let (
             new_value,
@@ -3918,11 +4188,31 @@ impl CPU {
         self.registers.a = new_value;
     }
 
+    /// Add the value of the A register with the given value and with the carry
+    ///
+    /// Always resets the N flag  
+    /// Sets the C flag iff there is an overflow
+    /// Sets the H falg iff there is a carry on bit 4  
+    /// Sets the z flag iff the result is zero
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value added to A
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0x12;
+    /// new_cpu.registers.set_carry(true);
+    /// new_cpu.adc(0x34);
+    /// // 0x12 + 0x34 + 0x01 = 0x47
+    /// assert_eq!(new_cpu.registers.a, 0x47);
+    /// ```
     fn adc(&mut self, value: u8) {
+        let carry_as_u8 = if self.registers.get_carry() {1u8} else {0u8};
         let (
             temp_value,
             did_overflow1
-        ) = value.overflowing_add(1);
+        ) = value.overflowing_add(carry_as_u8);
         let (
             new_value,
             did_overflow2
@@ -3938,11 +4228,29 @@ impl CPU {
         );
         // Est-ce que la première moitié overflow?
         self.registers.set_half(
-            (self.registers.a & 0x0F) + (value + 0x0F) + 1 > 0x0F
+            (self.registers.a & 0x0F) + (value + 0x0F) + carry_as_u8 > 0x0F
         );
         self.registers.a = new_value;
     }
 
+    /// Add the value of the HL register with the given value and update HL.
+    ///
+    /// Always resets the N flag  
+    /// Sets the C flag iff there is an overflow
+    /// Sets the H falg iff there is a carry on bit 12  
+    /// Does not affect the Z flag  
+    ///
+    /// # Arguments
+    /// **value (u16)**: Value added to HL
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.set_hl(0x3412);
+    /// new_cpu.addhl(0x369C);
+    /// // 0x369C + 0x3412 = 0x6AAE
+    /// assert_eq!(new_cpu.registers.get_hl(), 0x6AAE);
+    /// ```
     fn addhl(&mut self, value: u16) {
         let (
             new_value,
@@ -3962,7 +4270,37 @@ impl CPU {
         self.registers.set_hl(new_value);
     }
 
+    /// Add the value with an immediate word value read as a signed number.
+    ///
+    /// Always resets the Z flag  
+    /// Always resets the N flag  
+    /// Sets the C flag iff there is a carry on bit 8
+    /// Sets the H falg iff there is a carry on bit 4
+    ///
+    /// # Arguments
+    /// **value (u16)**: Value to add the immediate real to
+    ///
+    /// # Returns
+    /// **u16**: Given value added with the real word written at the program
+    /// counter.
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// // Normally the value will be read in the text session containing the
+    /// // code, however, for testing purpose and to be able to write at the
+    /// // adress of the programm counter, we will write in the stack and move
+    /// // the program counter in the stack.
+    /// let adress_imediate = new_cpu.registers.get_sp() - 1;
+    /// new_cpu.push(0x12);
+    /// new_cpu.push(0x34);
+    /// new_cpu.set_pc(adress_immediate);
+    /// // 0x369C + 0x3412 = 0x6AAE
+    /// assert_eq!(new_cpu.addr8(0x369C), 0x6AAE);
+    /// ```
     fn addr8(&mut self, value: u16) -> u16 {
+        // i8 to have a sign value, i16 to keep the sign and have 16 bits, u16
+        // to make the addition
         let fetched_value = self.fetchbyte() as i8 as i16 as u16;
         self.registers.set_zero(
             false
@@ -3979,54 +4317,25 @@ impl CPU {
         fetched_value.wrapping_add(value)
     }
 
-    fn and(&mut self, value: u8) {
-        self.registers.a &= value;
-        self.registers.set_zero(
-            self.registers.a == 0
-        );
-        self.registers.set_half(
-            true
-        );
-        self.registers.set_carry(
-            false
-        );
-        self.registers.set_sub(
-            false
-        );
-    }
-
-    fn or(&mut self, value: u8) {
-        self.registers.a |= value;
-        self.registers.set_zero(
-            self.registers.a == 0
-        );
-        self.registers.set_half(
-            false
-        );
-        self.registers.set_carry(
-            false
-        );
-        self.registers.set_sub(
-            false
-        );
-    }
-
-    fn xor(&mut self, value: u8) {
-        self.registers.a ^= value;
-        self.registers.set_zero(
-            self.registers.a == 0
-        );
-        self.registers.set_half(
-            false
-        );
-        self.registers.set_carry(
-            false
-        );
-        self.registers.set_sub(
-            false
-        );
-    }
-
+    /// Substract the given value to the register A
+    ///
+    /// Sets the Z flag iff the result is 0  
+    /// Always sets the N flag  
+    /// Sets the C flag iff the result would be negative without wrapping  
+    /// Sets the H falg iff the result of the substraction of the value made by
+    /// the four rightest bits of A and those of the given value is negative
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to substract to the register A
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0x12;
+    /// new_cpu.sub(0x03);
+    /// // 0x12 - 0x03 = 0x0F
+    /// assert_eq!(new_cpu.registers.a, 0x0F);
+    /// ```
     fn sub(&mut self, value: u8) {
         let (new_value, did_overflow) = self.registers.a.overflowing_sub(value);
         self.registers.set_zero(
@@ -4045,8 +4354,32 @@ impl CPU {
         self.registers.a = new_value;
     }
 
+    /// Substract the given value and the carry to the register A
+    ///
+    /// Sets the Z flag iff the result is 0  
+    /// Always sets the N flag  
+    /// Sets the C flag iff the result would be negative without wrapping  
+    /// Sets the H falg iff the result of the substraction of the value made by
+    /// the four rightest bits of A, those of the given value, and the value of
+    /// the carry flag, is negative
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to substract to the register A
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0x12;
+    /// new_cpu.registers.set_carry(true);
+    /// new_cpu.sbc(0x03);
+    /// // 0x12 - 0x03 - 0x01 = 0x0E
+    /// assert_eq!(new_cpu.registers.a, 0x0E);
+    /// ```
     fn sbc(&mut self, value: u8) {
-        let (temp_value, did_overflow1) = self.registers.a.overflowing_sub(1);
+        let carry_as_u8 = if self.registers.get_carry() {1u8} else {0u8};
+        let (temp_value, did_overflow1) = self.registers.a.overflowing_sub(
+            carry_as_u8
+        );
         let (new_value, did_overflow2) = temp_value.overflowing_sub(value);
         self.registers.set_zero(
             new_value == 0
@@ -4059,20 +4392,172 @@ impl CPU {
         );
         // Est-ce que la première moitié overflow?
         self.registers.set_half(
-            (self.registers.a & 0x0F) < (value + 0x0F) + 1
+            (self.registers.a & 0x0F) < (value + 0x0F) + carry_as_u8
         );
         self.registers.a = new_value;
     }
 
+    /// Sets the flags depending of the result of A - arg
+    ///
+    /// Sets the Z flag iff the result is zero (aka A == arg)  
+    /// Always sets the N flag  
+    /// Sets the C flag iff the result is negative (aka A < arg)  
+    /// Sets the H flag iff the four lower bits of A make a smaller value than
+    /// the four lower bits of arg  
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to compare A to
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0x12;
+    /// let res = new_cpu.cp(0x15);
+    /// // 0x12 < 0x15
+    /// assert!(new_cpu.registers.get_carry());
+    /// ```
     fn cp(&mut self, value: u8) {
         let (new_value, did_overflow) = self.registers.a.overflowing_sub(value);
-        self.flags.zero = new_value == 0;
-        self.flags.subtract = true;
-        self.flags.carry = did_overflow;
+        self.flags.set_zero(
+            new_value == 0
+        );
+        self.flags.set_sub(
+            true
+        );
+        self.flags.set_carry(
+            did_overflow
+        );
+        self.registers.set_half(
+            (self.registers.a & 0x0F) < (value + 0x0F)
+        );
     }
 
+    /// And the given value with the register A and update the value of this
+    /// register, bit by bit
+    ///
+    /// Sets the Z flag iff the result is 0  
+    /// Always sets the H flag  
+    /// Always resets the C flag  
+    /// Always resets the N flag
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to and A with
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b01110110;
+    /// new_cpu.or(0b01001011);
+    /// assert_eq!(new_cpu.registers.a, 0b01000010);
+    /// ```
+    fn and(&mut self, value: u8) {
+        self.registers.a &= value;
+        self.registers.set_zero(
+            self.registers.a == 0
+        );
+        self.registers.set_half(
+            true
+        );
+        self.registers.set_carry(
+            false
+        );
+        self.registers.set_sub(
+            false
+        );
+    }
+
+    /// Or the given value with the register A and update the value of this
+    /// register, bit by bit
+    ///
+    /// Sets the Z flag iff the result is 0  
+    /// Always resets the H flag  
+    /// Always resets the C flag  
+    /// Always resets the N flag
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to or A with
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b01110110;
+    /// new_cpu.or(0b01001011);
+    /// assert_eq!(new_cpu.registers.a, 0b01111111);
+    /// ```
+    fn or(&mut self, value: u8) {
+        self.registers.a |= value;
+        self.registers.set_zero(
+            self.registers.a == 0
+        );
+        self.registers.set_half(
+            false
+        );
+        self.registers.set_carry(
+            false
+        );
+        self.registers.set_sub(
+            false
+        );
+    }
+
+    /// Xor the given value with the register A and update the value of this
+    /// register, bit by bit
+    ///
+    /// Sets the Z flag iff the result is 0  
+    /// Always resets the H flag  
+    /// Always resets the C flag  
+    /// Always resets the N flag
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to xor A with
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b01110110;
+    /// new_cpu.xor(0b01001011);
+    /// assert_eq!(new_cpu.registers.a, 0b00001101);
+    /// ```
+    fn xor(&mut self, value: u8) {
+        self.registers.a ^= value;
+        self.registers.set_zero(
+            self.registers.a == 0
+        );
+        self.registers.set_half(
+            false
+        );
+        self.registers.set_carry(
+            false
+        );
+        self.registers.set_sub(
+            false
+        );
+    }
+
+    /// Returns the given shifted one bit to the left and with the rightest bit
+    /// set iff the carry is set
+    ///
+    /// Always resets the H flag  
+    /// Always resets the N flag  
+    /// Sets the Z flag iff the result is zero  
+    /// Sets the carry flag iff the bit that overstep is set  
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to shift
+    ///
+    /// # Returns
+    /// **u8**: Value of the argument shifted one bit to the left and with the
+    /// rightest bit set iff the carry is set
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b10010011;
+    /// assert!(!new_cpu.registers.get_carry());
+    /// let res = new_cpu.rlc(new_cpu.regiters.a);
+    /// assert_eq!(res, 0b0010110);
+    /// ```
     fn rl(&mut self, value: u8) -> u8 {
-        // left shift + carry flag placé à droite
         let res = (value << 1) | (
             if self.registers.get_carry() {
                 1
@@ -4096,6 +4581,28 @@ impl CPU {
         res
     }
 
+    /// Returns the given shifted one bit to the left and with the rightest bit
+    /// set iff the bit that overstep is set
+    ///
+    /// Always resets the H flag  
+    /// Always resets the N flag  
+    /// Sets the Z flag iff the result is zero  
+    /// Sets the carry flag iff the bit that overstep is set  
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to shift
+    ///
+    /// # Returns
+    /// **u8**: Value of the argument shifted one bit to the left and with the
+    /// rightest bit set iff the bit that overstep is set
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b10010011;
+    /// let res = new_cpu.rlc(new_cpu.regiters.a);
+    /// assert_eq!(res, 0b0010111);
+    /// ```
     fn rlc(&mut self, value: u8) -> u8 {
         // left shift + bit qui sort placé à droite
         let res = (value << 1) | (
@@ -4121,6 +4628,30 @@ impl CPU {
         res
     }
 
+    /// Returns the given shifted one bit to the right and with the leftest bit
+    /// set iff the carry is set
+    ///
+    /// Always resets the H flag  
+    /// Always resets the N flag  
+    /// Sets the Z flag iff the result is zero  
+    /// Sets the carry flag iff the bit that overstep is set  
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to shift
+    ///
+    /// # Returns
+    /// **u8**: Value of the argument shifted one bit to the right and with the
+    /// leftest bit set iff the carry is set
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b10010011;
+    /// // The carry flag is initially reset
+    /// assert!(!new_cpu.registers.get_carry());
+    /// let res = new_cpu.rrc(new_cpu.regiters.a);
+    /// assert_eq!(res, 0b01001001);
+    /// ```
     fn rr(&mut self, value: u8) -> u8 {
         // right shift + carry flag placé à gauche
         let res = (value >> 1) | (
@@ -4146,8 +4677,29 @@ impl CPU {
         res
     }
 
+    /// Returns the given shifted one bit to the right and with the leftest bit
+    /// set iff the bit that overstep is set
+    ///
+    /// Always resets the H flag  
+    /// Always resets the N flag  
+    /// Sets the Z flag iff the result is zero  
+    /// Sets the carry flag iff the bit that overstep is set  
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to shift
+    ///
+    /// # Returns
+    /// **u8**: Value of the argument shifted one bit to the right and with the
+    /// leftest bit set iff the bit that overstep is set
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b10010011;
+    /// let res = new_cpu.rrc(new_cpu.regiters.a);
+    /// assert_eq!(res, 0b11001001);
+    /// ```
     fn rrc(&mut self, value: u8) -> u8 {
-        // right shift + bit qui sort placé à gauche
         let res = (value >> 1) | (
             if (value & 0x01) == 0x01 {
                 0x80
@@ -4171,31 +4723,28 @@ impl CPU {
         res
     }
 
-    fn daa(&mut self) {
-        // d'après https://github.com/mvdnes/rboy/blob/master/src/cpu.rs#L793
-        let mut a = self.registers.a;
-        let mut adjust = if self.registers.get_carry() {
-            0x60
-        } else {
-            0x00
-        };
-        if self.registers.get_half() {
-            adjust |= 0x06;
-        };
-        if !self.registers.get_sub() {
-            if a & 0x0F > 0x09 { adjust |= 0x06; };
-            if a > 0x99 { adjust |= 0x60; };
-            a = a.wrapping_add(adjust);
-        } else {
-            a = a.wrapping_sub(adjust);
-        }
-
-        self.registers.set_carry(adjust >= 0x60);
-        self.registers.set_half(false);
-        self.registers.set_zero(a == 0);
-        self.registers.a = a;
-    }
-
+    /// Returns the given shifted one bit to the left and with the rightest bit
+    /// unchanged
+    ///
+    /// Always resets the H flag  
+    /// Always resets the N flag  
+    /// Sets the Z flag iff the result is zero  
+    /// Sets the carry flag iff the bit that overstep is set  
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to shift
+    ///
+    /// # Returns
+    /// **u8**: Value of the argument shifted one bit to the left and with the
+    /// rightest bit unchanged
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b10010011;
+    /// let res = new_cpu.sla(new_cpu.regiters.a);
+    /// assert_eq!(res, 0b00100111);
+    /// ```
     fn sla(&mut self, value: u8) -> u8 {
         let result = value << 1;
         self.registers.set_half(
@@ -4213,8 +4762,29 @@ impl CPU {
         result
     }
 
+    /// Returns the given shifted one bit to the right and with the leftest bit
+    /// unchanged
+    ///
+    /// Always resets the H flag  
+    /// Always resets the N flag  
+    /// Sets the Z flag iff the result is zero  
+    /// Sets the carry flag iff the bit that overstep is set  
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to shift
+    ///
+    /// # Returns
+    /// **u8**: Value of the argument shifted one bit to the right and with the
+    /// leftest bit unchanged
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b10010010;
+    /// let res = new_cpu.sra(new_cpu.regiters.a);
+    /// assert_eq!(res, 0b11001001);
+    /// ```
     fn sra(&mut self, value: u8) -> u8 {
-        // MSB doesn't change
         let result = value >> 1 | (value & 0x80);
         self.registers.set_half(
             false
@@ -4231,8 +4801,29 @@ impl CPU {
         result
     }
 
+    /// Returns the given shifted one bit to the right and with the leftest bit
+    /// reset
+    ///
+    /// Always resets the H flag  
+    /// Always resets the N flag  
+    /// Sets the Z flag iff the result is zero  
+    /// Sets the carry flag iff the bit that overstep is set  
+    ///
+    /// # Arguments
+    /// **value (u8)**: Value to shift
+    ///
+    /// # Returns
+    /// **u8**: Value of the argument shifted one bit to the right and with the
+    /// leftest bit reset
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0b10010010;
+    /// let res = new_cpu.srl(new_cpu.regiters.a);
+    /// assert_eq!(res, 0b01001001);
+    /// ```
     fn srl(&mut self, value: u8) -> u8 {
-        // MSB set to zero
         let result = value >> 1;
         self.registers.set_half(
             false
@@ -4249,6 +4840,28 @@ impl CPU {
         result
     }
 
+    /// Returns the given value with the four lower and the four upper bits
+    /// swapped.
+    ///
+    /// Sets the Z bit iff the result is zero  
+    /// Always resets the C flag  
+    /// Always resets the N flag  
+    /// Always resets the H flag  
+    ///
+    /// # Arguments
+    /// **value (u8)**: Operand to modify
+    ///
+    /// # Returns
+    /// **u8**: Value of the argument with the four lower and the four upper
+    /// bits swapped.
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0x12;
+    /// let res = new_cpu.swap(new_cpu.regiters.a);
+    /// assert_eq!(res, 0x21);
+    /// ```
     fn swap(&mut self, value: u8) -> u8 {
         let result = (
             (value & 0xF0) >> 4 |
@@ -4272,13 +4885,13 @@ impl CPU {
     /// Sets the zero flag depending of the value of the given bit of the
     /// second argument
     ///
-    /// Sets the Z flag iff the bit-th bit of value is 0b0
-    /// Always resets the N flag
-    /// Always sets the H flag
-    /// Does not affect the C flag
+    /// Sets the Z flag iff the bit-th bit of value is 0b0  
+    /// Always resets the N flag  
+    /// Always sets the H flag  
+    /// Does not affect the C flag  
     ///
     /// # Arguments
-    /// **bit (u32)**: Position of the bit to test
+    /// **bit (u32)**: Position of the bit to test  
     /// **value (u8)**: Value to test
     ///
     /// # Examples
@@ -4307,8 +4920,8 @@ impl CPU {
     ///
     /// # Arguments
     /// **bit (u32)**: Position of the bit to reset in the value (0 being the
-    /// LSB)
-    /// **value (u8)**: Value that will be modified
+    /// LSB)  
+    /// **value (u8)**: Value that will be modified  
     ///
     /// # Returns
     /// **u8**: Initial value with the given bit reset
@@ -4329,7 +4942,7 @@ impl CPU {
     ///
     /// # Arguments
     /// **bit (u32)**: Position of the bit to set in the value (0 being the
-    /// LSB)
+    /// LSB)  
     /// **value (u8)**: Value that will be modified
     ///
     /// # Returns
@@ -4347,3 +4960,58 @@ impl CPU {
         value | ((1 << bit) as u8)
     }
 
+    /// Decimal adjust the register A
+    ///
+    /// Adjust the value of A to obtain a correct Binary Coded Decimal (BCD)
+    /// meaning that each byte has a value between 0 and 9.  
+    /// Its the value is adjusted to make the previous operation appear as if
+    /// it was done with two decimal numbers.  
+    /// Substracts 6 to the upper or lower nybble depending of some criteria:  
+    /// - was the previous operation a substraction (N flag) -> correction by
+    /// addition or substraction,  
+    /// - did an overflow occur (C flag) -> adjust the upper nybble,  
+    /// - did an overflow occur on the first nible (H flab) -> adjust the lower
+    /// nybble,  
+    /// - is one of the nybble's value greater than 9 (addition only) ->
+    /// correction of this nybble.
+    ///
+    /// Sets the Z flag iff the result is zero  
+    /// Does not affect the N flag  
+    /// Always resets the H falg  
+    /// Sets the carry flag iff the correction create an overflow  
+    ///
+    /// # Examples
+    /// ```rust
+    /// let mut new_cpu = CPU::new("test.gb");
+    /// new_cpu.registers.a = 0x92;
+    /// new_cpu.registers.b = 0x36;
+    /// new_cpu.add(new_cpu.registers.b);
+    /// // The two operand are correct BCD but the resutl is not
+    /// assert_eq!(new_cpu.registers.a, 0xC8);
+    /// new_cpu.daa();
+    /// assert_eq!(new_cpu.registers.a, 0x28);
+    fn daa(&mut self) {
+        let mut a = self.registers.a;
+        self.registers.set_carry(false);
+        if self.registers.get_sub() {
+            if self.registers.get_carry() {
+                a = a.wrapping_sub(0x60);
+                self.registers.set_carry(true);
+            }
+            if self.registers.get_half() {
+                a = a.wrapping_sub(0x06);
+            }
+        } else {
+            if self.registers.get_carry() || a > 0x99) {
+                self.registers.set_carry(true);
+                a = a.wrapping_add(0x60);
+            }
+            if self.registers.get_half() || (a & 0x0F) > 0x09 {
+                a = a.wrapping_add(0x06);
+            }
+        }
+        self.registers.set_half(false);
+        self.registers.set_zero(a == 0);
+        self.registers.a = a;
+    }
+}
