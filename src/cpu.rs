@@ -4964,7 +4964,7 @@ impl CPU {
     ///
     /// Adjust the value of A to obtain a correct Binary Coded Decimal (BCD)
     /// meaning that each byte has a value between 0 and 9.  
-    /// Its the value is adjusted to make the previous operation appear as if
+    /// Its value is adjusted to make the previous operation appear as if
     /// it was done with two decimal numbers.  
     /// Substracts 6 to the upper or lower nybble depending of some criteria:  
     /// - was the previous operation a substraction (N flag) -> correction by
@@ -4990,6 +4990,7 @@ impl CPU {
     /// assert_eq!(new_cpu.registers.a, 0xC8);
     /// new_cpu.daa();
     /// assert_eq!(new_cpu.registers.a, 0x28);
+    /// ```
     fn daa(&mut self) {
         let mut a = self.registers.a;
         self.registers.set_carry(false);
