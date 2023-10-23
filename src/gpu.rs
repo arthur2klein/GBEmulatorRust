@@ -40,7 +40,7 @@ impl Tile_object {
     }
 }
 
-pub class GPU {
+pub struct GPU {
     ram: Vec<u8>,
     object_attribute: Vec<Tile_object>,
     lcd_control: u8,
@@ -48,23 +48,51 @@ pub class GPU {
     background_viewport_y: u8,
     background_viewport_x: u8,
     lcd_y_coordinate: u8,
-    windoy_y_position: u8,
+    window_y_position: u8,
     window_x_position_plus_sept: u8,
     lyc_compare: u8,
     /// gray shades (2 bit each) corresponding to the color ids
     bg_palette_data: u8,
     obp0: u8,
     obp1: u8,
+    pending_stat_interrupt: bool,
+    screen: Screen,
+    cpu_cycle: u16,
 }
 
 impl GPU {
+    /// Create a new GPU
+    ///
+    /// # Returns
+    /// **GPU**: New GPU
     pub fn new() -> Self {
         Self {
             ram: vec![0; 0x2000],
-            object_attribues: vec![40; Tile_object::new()]
+            object_attribues: vec![40; Tile_object::new()],
+            lcd_control: 0,
+            lcd_status: 0,
+            background_viewport_y: 0,
+            background_viewport_x: 0,
+            lcd_y_coordinate: 0,
+            window_y_position: 0,
+            window_x_position_plus_sept: 0,
+            lyc_compare: 0,
+            bg_palette_data: 0,
+            obp0: 0,
+            obp1: 0,
+            pending_stat_interrupt: false,
+            screen: Screen::new(),
+            cpu_cycle: 0,
         }
     }
 
+    /// Read a value in the given address of the LCD memory are
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address to read
+    ///
+    /// # Returns
+    /// **u8**: Value read at this address
     pub fn read_lcd(&self, address: u16) -> u8 {
         match address {
             // LCD
@@ -105,6 +133,11 @@ impl GPU {
         }
     }
 
+    /// Write the given value in the given address of the LCD memory area
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address to write to
+    /// **value (u8)**: Value to write at this address
     pub fn write_lcd(&self, address: u16, value: u8) {
         match address {
             // LCD
@@ -145,10 +178,22 @@ impl GPU {
         }
     }
 
+    /// Read a value in the given address of the VRAM
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address to read
+    ///
+    /// # Returns
+    /// **u8**: Value read at this address
     pub fn read_ram(&self, address: u16) -> u8 {
         self.ram[address - 0x8000]
     }
     
+    /// Write the given value in the given address of the VRAM
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address to write to
+    /// **value (u8)**: Value to write at this address
     pub fn write_ram(
         &mut self,
         address: u16,
@@ -157,6 +202,13 @@ impl GPU {
         self.ram[address - 0x8000] = value;
     }
 
+    /// Read a value in the given address of the OAM
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address to read
+    ///
+    /// # Returns
+    /// **u8**: Value read at this address
     pub fn read_oam(&self, address: u16) -> u8 {
        let entry = (address & 0x00FF) >> 2;
        let byte = (address & 0x00FF) & 0x0003;
@@ -176,73 +228,11 @@ impl GPU {
        }
     }
 
-    fn draw(&mut self) {
-        self.draw_background();
-        self.draw_objects();
-    }
-
-    fn draw_background(&mut self) {
-        // TODO
-    }
-    
-    fn tile_from_index(&self, index: u8) -> Tile {
-        if index > 127 {
-            self.ram[0x0800 | (index & 0x7F as u16)]
-        } else {
-            if self.lcd_control & 0x10 {
-                self.ram[0x1000 | (index & 0x7F as u16)]
-            } else {
-                self.ram[0x0000 | (index & 0x7F as u16)]
-            }
-        }
-    }
-
-    fn draw_object(&mut self, index: u8) {
-        let y_position = self.object_attribute[index].y_position - 16;
-        let x_position = self.object_attribute[index].x_position - 8;
-        let tile_index = self.object_attribute[index].tile_index;
-        let priority = self.object_attribute[index].get_priority();
-        let y_flip = self.object_attribute[index].get_y_flip();
-        let x_flip = self.object_attribute[index].get_x_flip();
-        let dmg_palette = self.object_attribute[index].get_dmg_palette();
-        let tile_address = self.tile_from_index(tile_index);
-        let lines = ram[tile_address..tile_address + 16];
-        for i in 0..8 {
-            for j in 0..8 {
-                let color_id = lines[2 * line + 1] * 2 + lines[2 * line];
-                let color = if dmg_palette {
-                    (self.obp1 >> (2 * color_id)) & 0x3
-                } else {
-                    (self.obp0 >> (2 * color_id)) & 0x3
-                }
-                if color != 0 {
-                    self.draw_pixel(
-                        y_position + if y_flip {i} else {8 - i},
-                        x_position + if x_flip {j} else {8 - j},
-                        color,
-                        priority,
-                    );
-                }
-
-            }
-        }
-    }
-
-    fn draw_pixel(
-        y_position,
-        x_position,
-        color,
-        priority,
-    ) {
-        // TODO
-    }
-
-    fn draw_objects(&mut self) {
-        for i in 0..40 {
-            self.draw_object(i);
-        }
-    }
-
+    /// Write the given value in the given address of the OAM
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address to write to
+    /// **value (u8)**: Value to write at this address
     pub fn write_oam(
         &mut self,
         address: u16,
@@ -266,4 +256,359 @@ impl GPU {
        }
     }
 
+    /// Returns true iff the screen should be displayed
+    ///
+    /// # Returns
+    /// **bool**: True iff the screen should be displayed
+    fn is_enabled(&self) {
+        self.lcd_control & 0x80 == 0x80
+    }
+
+    /// Returns the window tile map beginning address
+    ///
+    /// # Retuns
+    /// **u16**: Beginning of the window tile map area
+    fn window_tile_map(&self) -> u16 {
+        if self.lcd_control & 0x40 == 0x40 {
+            0x9800
+        } else {
+            0x9C00
+        }
+    }
+
+    /// Returns true iff the window should be drawn on the screen
+    ///
+    /// # Returns 
+    /// **bool**: True iff the window should be drawn on the screen
+    fn should_draw_window(&self) -> bool {
+        self.lcd_control & 0x20 == 0x20
+    }
+
+    /// Returns the beginning address of the tile map area
+    ///
+    /// # Returns
+    /// **u16**: Beginning address of the tile map area
+    fn background_tile_map(&self) -> u16 {
+        if self.lcd_control & 0x08 == 0x08 {
+            0x9800
+        } else {
+            0x9C00
+        }
+    }
+
+    /// Returns the height of the objects
+    ///
+    /// # Returns
+    /// **u8**: Height of the objects (16 or 8)
+    fn obj_size(&self) -> u8 {
+        if self.lcd_control & 0x04 == 0x04 {
+            16
+        } else {
+            8
+        }
+    }
+
+    /// Returns true if the objects should be drawn on the screen
+    ///
+    /// # Retuns 
+    /// **bool**: True if the objects should be drans on the screen
+    fn should_draw_objects(&self) -> bool {
+        self.lcd_control & 0x02 == 0x02
+    }
+
+    /// Returns true if the window and background should be drawn on the screen
+    ///
+    /// # Retuns
+    /// **bool**: True if the window and background should be drawn on the
+    /// screen
+    fn should_draw_window_and_background(&self) -> bool {
+        self.lcd_control & 0x01 == 0x01
+    }
+
+    /// Sends a VBlank interruption
+    ///
+    /// Specify that a VBlank interruption is pending for the MMU to indicate it
+    /// This means that the PPU is wainting for the next frame
+    fn send_stat_interrupt(&mut self) {
+        self.pending_vblank_interrupt = true;
+    }
+
+    /// Sends a STAT interruption
+    ///
+    /// Specify that a STAT interruption is pending for the MMU to indicate it
+    fn send_stat_interrupt(&mut self) {
+        self.pending_stat_interrupt = true;
+    }
+
+    /// Checks if lyc == ly
+    ///
+    /// The gameboy compare constantly the values of the addresses of LCY Y
+    /// Compare and LCD Y coordinate, and sends an interruption when they are
+    /// equal
+    fn lyc_equal_ly(&mut self) {
+        self.lcd_status |= 0x040;
+        if self.lcd_status & 0x40 == 0x40 {
+            self.send_stat_interrupt();
+        }
+    }
+
+    /// Switches the PPU mode
+    ///
+    /// If the new mode is different for the previous one, change the mode
+    /// indicated in LCD status, and if the interruptions are activated for
+    /// this mode, send one.
+    ///
+    /// # Arguments
+    /// **mode (u8)**: New PPU mode
+    fn switch_mode_to(&mut self, mode: u8) {
+        let old_mode = self.lcd_status & 0x03;
+        if mode == old_mode {
+            return;
+        }
+        self.lcd_status = (self.lcd_status & 0xFC) | (mode & 0x03);
+        let mask = 1 << (mode + 3);
+        let interruption_for_this_mode = self.lcd_status & mask == mask;
+        if interruption_for_this_mode {
+            self.send_stat_interrupt();
+        }
+    }
+
+    pub fn update(&mut self, n_cycles: u16) {
+        if (self.cpu_cycle & 0x3FFF + n_cycles) >= 0x4000 {
+            self.draw_lines();
+        }
+        self.cpu_cycle = self.cpu.cycle.wrapping_add(n_cycles);
+    }
+
+    /// Draws one frame
+    ///
+    /// One frame lasts 16.74 ms
+    fn draw_lines(&mut self) {
+        self.lcd_y_coordinate = 0;
+        loop {
+            //let time = SystemTime::now();
+            if self.lcd_y_coordinate == self.lcd_y_compare {
+                self.lyc_equal_ly();
+            }
+            self.draw_line();
+            self.lcd_y_coordinate += 1;
+            if self.lcd_y_coordinate >= 154 {
+                self.lcd_y_coordinate = 0;
+            }
+            //sleep(Duration::from_micros(16740) - time.elapsed.unwrap());
+        }
+    }
+
+    /// Draws a line on the screen
+    ///
+    /// Drawn the line which as y = lcd_y_coordinate
+    fn draw_line(&mut self) {
+        // 4 dots per CPU cycle (4.194 MHz)
+        let ly = self.lcd_y_coordinate;
+        if ly == 144 {
+            self.send_vblank_interrup();
+        }
+        if ly > 143 {
+            self.switch_mode_to(1);
+            // Mode 1
+            // Vertical Black
+            // Waiting until the next frame
+            // 456 dots
+            return;
+        }
+        self.switch_mode_to(2);
+        // Mode 2
+        // OAM Scan
+        // Searching for OBJs which overlap this line
+        // 80 dots
+        let obj_in_line = self.objects_in_line(ly);
+        self.switch_mode_to(3);
+        // Mode 3
+        // Drawing pixels
+        // Sending pixels to the LCD
+        // 172 dots (160 pixels wide)
+        for x in 0..159 {
+            screen.receive_pixel(
+                x,
+                y,
+                self.draw_pixel(x, ly, obj_in_line)
+            );
+        }
+        self.switch_mode_to(0);
+        // Mode 0
+        // Horizontal blank
+        // Waiting for the end of the scanline
+        // 204 dots
+    }
+
+    /// Returns the color id of a pixel in a tile
+    ///
+    /// # Arguments
+    /// **tile_address (u16)**: Address of the tile
+    /// **x_in_tile (u8)**: column in the tile
+    /// **y_in_tile (u8)**: line in the tile
+    ///
+    /// # Returns
+    /// Color id of the given pixel in the given tile
+    fn color_id_in_tile(
+        &self,
+        tile_address: u16,
+        y_in_tile: u8,
+        x_in_tile: u8,
+    ) {
+        let line_tile = tile_address + y_in_tile * 16;
+        (
+            ((line_tile & (1 << (x_in_tile + 8))) >> (x_in_tile + 8)) +
+            ((line_tile & (1 << (x_in_tile))) >> (x_in_tile + 7)) 
+        )
+    }
+
+    /// Returns the color of a pixel of the background
+    ///
+    /// # Arguments
+    /// **x (u8)**: x coordinate of the pixel on the screen
+    /// **y (u8)**: y coordinate of the pixel on the screen
+    ///
+    /// # Returns
+    /// **u8**: Color of the given pixel from the background
+    fn color_background(&self, x: u8, y: u8) -> u8 {
+        let y_in_map = (self.background_viewport_y + y) % 256;
+        let x_in_map = (self.background_viewport_x + x) % 256;
+        let tile_index = x_in_map / 8 + (y_in_map / 8) * 256;
+        let tile_address = self.background_tile_data() + tile_index * 2; 
+        let x_in_tile = x_in_map % 8;
+        let y_in_tile = y_in_map % 8;
+        let color_id = self.color_id_in_tile(
+           tile_address,
+           y_in_tile,
+           x_in_tile
+        );
+        (self.bg_palette_data >> (color_id * 2)) & 0x03
+    }
+
+    /// Returns the color of a pixel of the window
+    ///
+    /// # Arguments
+    /// **x (u8)**: x coordinate of the pixel on the screen
+    /// **y (u8)**: y coordinate of the pixel on the screen
+    ///
+    /// # Returns
+    /// **u8**: Color of the given pixel from the window or 4 if the pixel is
+    /// out of the window
+    fn color_window(&self, x: u8, y: u8) -> u8 {
+        let y_in_map = self.window_y_position + y;
+        let x_in_map = self.window_x_position_plus_sept + x;
+        if !(
+            (y_in_map >= 0 && y_in_map < 143) &&
+            (x_in_map >= 0 && x_in_map < 166)
+        ) {
+            return 4;
+        }
+        let tile_index = x_in_map / 8 + (y_in_map / 8) * 256;
+        let tile_address = self.window_tile_map() + tile_index * 2; 
+        let x_in_tile = x_in_map % 8;
+        let y_in_tile = y_in_map % 8;
+        let color_id = self.color_id_in_tile(
+           tile_address,
+           y_in_tile,
+           x_in_tile
+        );
+        (self.bg_palette_data >> (color_id * 2)) & 0x03
+    }
+
+    /// Returns the color of the pixel on the screen
+    ///
+    /// Checks whether an object, the window or the background should be
+    /// displayed at this pixel and sends it to the lcd
+    ///
+    /// # Arguments
+    /// **x (u8)**: X coordinate of the pixel
+    /// **y (u8)**: Y coordinate of the pixel
+    /// **obj_in_line (Vec<u32>)**: Indices of the objects in this line
+    ///
+    /// # Retuns
+    /// **u8**: Color of the given pixel
+    fn draw_pixel(
+        &mut self,
+        x: u8,
+        y: u8,
+        obj_in_line: Vec<u32>
+    ) -> u8 {
+        let color_from_background = self.color_background(x, y);
+        let color_from_window = self.color_window(x, y);
+        let mut has_priority: bool = false;
+        let mut x_position: u8 = 0xFF;
+        let mut color_from_obj: u8 = 0;
+        let mut is_transparent: bool = true;
+        for i in obj_in_line.iter() {
+            if !(
+                obj_in_line[i].x_position <= x &&
+                obj_in_line[i].x_position + 8 > x
+            ) {
+                continue;
+            }
+            let tile_for_obj = 0x8000 + 16 * obj_in_line[i].tile_index;
+            let color_id = self.color_id_in_tile(
+                tile_address,
+                y - obj_in_line[i].y_position,
+                if obj_in_line[i].get_x_flip() {
+                    x - obj_in_line[i].x_position
+                } else {
+                    7 - (x + obj_in_line[i].x_position)
+                },
+            );
+            if color_id == 0 {
+                continue;
+            }
+            is_tranparent = false;
+            let current_has_priority = obj_in_line[i].get_priority();
+            if has_priority && !current_has_priority {
+                continue;
+            }
+            if x_position < obj_in_line[i].x_position {
+                continue;
+            }
+            color_from_obj = (if self.obj_in_line[i].get_dmg_palette() {
+                self.obp1
+            } else {
+                self.obp0
+            } >> (2 * color_id)) & 0x3;
+        }
+        if !is_transparent {
+            color_from_obj
+        } else if self.should_draw_window_and_background() {
+            if self.should_draw_window() && color_from_window != 4 {
+                color_from_window
+            } else {
+                color_from_background
+            }
+        } else {
+            0x00
+        }
+    }
+
+    /// Mode 2 of drawing a line
+    ///
+    /// During 80 dots, the ppu search up to 10 valid objects intersecting the
+    /// current y coordinate
+    ///
+    /// # Arguments
+    /// **y (u8)**: Current y coordinate (as found at 0xFF40)
+    ///
+    /// # Returns
+    /// **Vec<u32>**: Collections of the indices of objects found in the
+    /// current line
+    fn objects_in_line(&self, y: u8) -> Vec<u32> {
+        let obj_size = self.obj_size();
+        for i in 0..40 {
+            let y_position = self.object_attribute[i].y_position - 16;
+            if y_position <= y and y_position + obj_size > y {
+                res.push(i);
+                if res.len() == 10 {
+                    return res;
+                }
+            }
+        }
+        res
+    }
 }

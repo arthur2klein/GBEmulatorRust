@@ -684,9 +684,9 @@ impl CPU {
     /// ```rust
     /// let new_cpu = CPU::new("test.gb");
     /// // Let's hope the cartridge "test.gb" contains something
-    /// new_cpu.work();
+    /// new_cpu.run();
     /// ```
-    pub fn work(&mut self) {
+    pub fn run(&mut self) {
         loop {
             let time = SystemTime::now();
             let time_used = self.execute_step();
@@ -4046,13 +4046,34 @@ impl CPU {
                 mmu.interrupt_flag & 0x04 == 0x04 &&
                 mmu.ie & 0x04 == 0x04
             ) {
-                mmu.interrupt_flag |= 0xF7;
-                mmu.ie |= 0xF7;
+                mmu.interrupt_flag |= 0xFB;
+                mmu.ie |= 0xFB;
                 // 2 NOP + PUSH PC + LD PC 0x50
                 self.rst(0x0050);
                 return 20;
             }
-            // TODO: Interrputions related to graphics
+            // if gpu.pending_stat_interrupt
+            if (
+                mmu.interrupt_flag & 0x02 == 0x02 &&
+                mmu.ie & 0x02 == 0x02
+            ) {
+                mmu.interrupt_flag |= 0xFD;
+                mmu.ie |= 0xFD;
+                // 2 NOP + PUSH PC + LD PC 0x50
+                self.rst(0x0048);
+                return 20;
+            }
+            // if gpu.pending_vblank_interrupt
+            if (
+                mmu.interrupt_flag & 0x01 == 0x01 &&
+                mmu.ie & 0x01 == 0x01
+            ) {
+                mmu.interrupt_flag |= 0xFE;
+                mmu.ie |= 0xFE;
+                // 2 NOP + PUSH PC + LD PC 0x50
+                self.rst(0x0040);
+                return 20;
+            }
         }
         // If 0 is return, no interruptions should be called
         0

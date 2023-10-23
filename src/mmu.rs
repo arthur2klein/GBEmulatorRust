@@ -240,6 +240,7 @@ impl MMU {
         n_cycles: u32,
     ) {
         io.update(n_cycles);
+        gpu.update(n_cycles);
         // INT 0x60
         if io.pending_joypad_interruption {
             self.interrupt_flag |= 0x10;
@@ -249,6 +250,16 @@ impl MMU {
         if io.pending_timer_interruption {
             self.interrupt_flag |= 0x04;
             io.pending_timer_interruption = false;
+        }
+        // INT 0x48
+        if gpu.pending_stat_interrupt {
+            self.interrupt_flag |= 0x02;
+            gpu.pending_stat_interrupt  = false;
+        }
+        // INT 0x40
+        if gpu.pending_vblank_interrupt {
+            self.interrupt_flag |= 0x01;
+            gpu.pending_stat_interrupt  = false;
         }
     }
 

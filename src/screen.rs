@@ -2,6 +2,14 @@ extern crate minifb;
 
 use minifb::{Key, Window, WindowOptions};
 
+struct Screen {
+    // TODO
+}
+
+impl Screen {
+    // TODO
+}
+
 pub fn display() {
     const WIDTH: usize = 160; // Game Boy screen width
     const HEIGHT: usize = 144; // Game Boy screen height

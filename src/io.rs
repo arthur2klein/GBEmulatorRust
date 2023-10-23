@@ -28,21 +28,22 @@ pub struct IO {
     timer_counter: u8,
     timer_modulo: u8,
     timer_control: u8,
-    // LCD Control
-    lcd_contrl: u8,
-    // LCD status registers
-    lcd_status: u8,
-    lcd_y_coordinate: u8,
-    lyc_compare: u8,
-    // LCD Position and scrolling
-    background_viewport_y: u8,
-    background_viewport_x: u8,
-    windoy_y_position: u8,
-    window_x_position_plus_sept: u8,
-    // Palettes
-    bg_palette_data: u8,
-    obp0: u8,
-    obp1: u8,
+//    // LCD Control
+//    lcd_control: u8,
+//    // LCD status registers
+//    lcd_status: u8,
+//    lcd_y_coordinate: u8,
+//    lyc_compare: u8,
+//    // LCD Position and scrolling
+//    background_viewport_y: u8,
+//    background_viewport_x: u8,
+//    windoy_y_position: u8,
+//    window_x_position_plus_sept: u8,
+//    // Palettes
+//    bg_palette_data: u8,
+//    obp0: u8,
+//    obp1: u8,
+    gpu: &GPU,
     // Set to non zero to diasable boot ROM
     disable_boot_rom: u8,
     // Interruptions
@@ -83,40 +84,43 @@ impl IO {
             0x07 => {
                 self.timer_control
             },
-            // LCD
-            0x40 => {
-                self.lcd_control
-            },
-            0x41 => {
-                self.lcd_status
-            },
-            0x42 => {
-                self.background_viewport_y
-            },
-            0x43 => {
-                self.background_viewport_x
-            },
-            0x44 => {
-                self.lcd_y_coordinate
-            },
-            0x4A => {
-                self.windoy_y_position
-            },
-            0x4B => {
-                self.window_x_position_plus_sept
-            },
-            0x45 => {
-                self.lyc_compare
-            },
-            // Palettes
-            0x47 => {
-                self.bg_palette_data
-            },
-            0x48 => {
-                self.obp0
-            },
-            0x49 => {
-                self.obp1
+//            // LCD
+//            0x40 => {
+//                self.lcd_control
+//            },
+//            0x41 => {
+//                self.lcd_status
+//            },
+//            0x42 => {
+//                self.background_viewport_y
+//            },
+//            0x43 => {
+//                self.background_viewport_x
+//            },
+//            0x44 => {
+//                self.lcd_y_coordinate
+//            },
+//            0x4A => {
+//                self.windoy_y_position
+//            },
+//            0x4B => {
+//                self.window_x_position_plus_sept
+//            },
+//            0x45 => {
+//                self.lyc_compare
+//            },
+//            // Palettes
+//            0x47 => {
+//                self.bg_palette_data
+//            },
+//            0x48 => {
+//                self.obp0
+//            },
+//            0x49 => {
+//                self.obp1
+//            },
+            0x40..0x50 => {
+                gpu.read_lcd(address)
             },
             // Set to non zero to diasable boot ROM
             0x50 => {
@@ -165,40 +169,43 @@ impl IO {
             0x07 => {
                 self.timer_control = value;
             },
-            // LCD
-            0x40 => {
-                self.lcd_control
-            },
-            0x41 => {
-                self.lcd_status
-            },
-            0x42 => {
-                self.background_viewport_y
-            },
-            0x43 => {
-                self.background_viewport_x
-            },
-            0x44 => {
-                self.lcd_y_coordinate
-            },
-            0x4A => {
-                self.windoy_y_position
-            },
-            0x4B => {
-                self.window_x_position_plus_sept
-            },
-            0x45 => {
-                self.lyc_compare
-            },
-            // Palettes
-            0x47 => {
-                self.bg_palette_data
-            },
-            0x48 => {
-                self.obp0
-            },
-            0x49 => {
-                self.obp1
+//            // LCD
+//            0x40 => {
+//                self.lcd_control
+//            },
+//            0x41 => {
+//                self.lcd_status
+//            },
+//            0x42 => {
+//                self.background_viewport_y
+//            },
+//            0x43 => {
+//                self.background_viewport_x
+//            },
+//            0x44 => {
+//                self.lcd_y_coordinate
+//            },
+//            0x4A => {
+//                self.windoy_y_position
+//            },
+//            0x4B => {
+//                self.window_x_position_plus_sept
+//            },
+//            0x45 => {
+//                self.lyc_compare
+//            },
+//            // Palettes
+//            0x47 => {
+//                self.bg_palette_data
+//            },
+//            0x48 => {
+//                self.obp0
+//            },
+//            0x49 => {
+//                self.obp1
+//            },
+            0x40..0x50 => {
+                gpu.write_lcd(address, value);
             },
             // Set to non zero to diasable boot ROM
             0x50 => {
