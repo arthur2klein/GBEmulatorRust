@@ -1,6 +1,6 @@
 extern crate minifb;
 
-use minifb::{Key, Window, WindowOptions};
+use minifb::{Window, WindowOptions};
 
 const WIDTH: usize = 160; // Game Boy screen width
 const HEIGHT: usize = 144; // Game Boy screen height
@@ -52,8 +52,8 @@ impl Screen {
     }
 
     pub fn update(&mut self) {
-        window
-            .update_with_buffer(&buffer)
+        self.window
+            .update_with_buffer(&self.buffer)
             .unwrap_or_else(|e| {
                 panic!("{}", e);
         });

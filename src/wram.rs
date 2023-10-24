@@ -10,7 +10,7 @@ impl WRAM {
     }
 
     pub fn read(&self, adress: u16) -> u8 {
-        ram[adress - 0xC000]
+        self.ram[adress - 0xC000]
     }
 
     pub fn write(
@@ -18,6 +18,6 @@ impl WRAM {
         adress: u16,
         value: u8
     ) {
-        ram[adress - 0xC000] = value;
+        self.ram[adress - 0xC000] = value;
     }
 }

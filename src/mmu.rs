@@ -4,7 +4,7 @@ use crate::wram::WRAM;
 use crate::hram::HRAM;
 use crate::io::IO;
 
-pub struct MMU {
+pub struct MMU<'a> {
     /* Interrupt flag: unused/unused/unused/joypad/serial/timer/lcd/vblank */
     interrupt_flag: u8,
     /* Register that controls the interrupts that are considered
@@ -21,13 +21,13 @@ pub struct MMU {
     /* High RAM of the system */
     hram: HRAM,
     /* I/0 Registers */
-    io: IO,
+    io: IO<'a>,
     /* Is the gameboy in double speed mode */
     is_double_speed: bool
 }
 
-impl MMU {
-    pub new(cartridge_path: &str) -> Self {
+impl MMU<'_> {
+    pub fn new(cartridge_path: &str) -> Self {
         let gpu = GPU::new();
         Self {
             interrupt_flag: 0x00,
@@ -52,58 +52,58 @@ impl MMU {
             },
             // 16 KiB ROM bank 00
             // From cartridge, usually a fixed bank
-            0x0000..0x4000 => {
+            0x0000..=0x3FFF => {
                 self.cartridge.read_rom(adress)
             },
             // 16 KiB ROM Bank 01~NN
             // From cartridge, switchable bank via mapper (if any)
-            0x4000..0x8000 => {
+            0x4000..=0x7FFF => {
                 self.cartridge.read_rom(adress)
             },
             // 8Kib Video RAM (VRAM)
             // In CGB mode, switchable bank 0/1
-            0x8000..0xA000 => {
+            0x8000..=0x9FFF => {
                 self.gpu.read_ram(adress)
             },
             // 8 Kib External RAM
             // From cartridge, switchable bank if any
-            0xA000..0xC000 => { 
+            0xA000..=0xBFFF => { 
                 self.cartridge.read_ram(adress)
             },
             // 4 KiB Work RAM (WRAM)
             //
-            0xC000..0xD000 => { 
+            0xC000..=0xCFFF => { 
                 self.wram.read(adress)
             },
             // 4Kib Work RAM (WRAM)
             // In CGB mode, switchable bank 1~7
-            0xD000..0xE000 => {
+            0xD000..=0xDFFF => {
                 self.wram.read(adress)
             },
             // Mirror of C000~DDFF (ECHO RAM)
             // Nintendo says use of this area is prohibited
-            0xE000..0xFE00 => {
+            0xE000..=0xFDFF => {
                 self.wram.read(adress - 0x2000)
             },
             // Object attribute Memory (OAM)
             //
-            0xFE00..0xFEA0 => {
+            0xFE00..=0xFE9F => {
                 self.gpu.read_oam(adress)
             },
             // Not Usable
             // Nintendo says use of this area is prohibited
-            0xFEA0..0xFF00 => {
+            0xFEA0..=0xFEFF => {
                 panic!("Tried to access to a prohibited memory adress");
                 0
             },
             // I/0 Registers
             //
-            0xFF00..0xFF80 => {
+            0xFF00..=0xFF7F => {
                 self.io.read(adress)
             }
             // High RAM (HRAM)
             //
-            0xFF80..0xFFFF => {
+            0xFF80..=0xFFFE => {
                 self.hram.read(adress)
             }
             // Interrupt Enable register
@@ -126,7 +126,7 @@ impl MMU {
             },
             // 16 KiB ROM bank 00
             // From cartridge, usually a fixed bank
-            0x0000..0x4000 => {
+            0x0000..=0x3FFF => {
                 self.cartridge.write_rom(
                     adress,
                     value
@@ -134,7 +134,7 @@ impl MMU {
             },
             // 16 KiB ROM Bank 01~NN
             // From cartridge, switchable bank via mapper (if any)
-            0x4000..0x8000 => {
+            0x4000..=0x7FFF => {
                 self.cartridge.write_rom(
                     adress,
                     value
@@ -142,7 +142,7 @@ impl MMU {
             },
             // 8Kib Video RAM (VRAM)
             // In CGB mode, switchable bank 0/1
-            0x8000..0xA000 => {
+            0x8000..=0x9FFF => {
                 self.gpu.write_ram(
                     adress,
                     value
@@ -150,7 +150,7 @@ impl MMU {
             },
             // 8 Kib External RAM
             // From cartridge, switchable bank if any
-            0xA000..0xC000 => { 
+            0xA000..=0xBFFF => { 
                 self.cartridge.write_ram(
                     adress,
                     value
@@ -158,7 +158,7 @@ impl MMU {
             },
             // 4 KiB Work RAM (WRAM)
             //
-            0xC000..0xD000 => { 
+            0xC000..=0xCFFF => { 
                 self.wram.write(
                     adress,
                     value
@@ -166,7 +166,7 @@ impl MMU {
             },
             // 4Kib Work RAM (WRAM)
             // In CGB mode, switchable bank 1~7
-            0xD000..0xE000 => {
+            0xD000..=0xDFFF => {
                 self.wram.write(
                     adress,
                     value
@@ -174,7 +174,7 @@ impl MMU {
             },
             // Mirror of C000~DDFF (ECHO RAM)
             // Nintendo says use of this area is prohibited
-            0xE000..0xFE00 => {
+            0xE000..=0xFDFF => {
                 self.wram.write(
                     adress - 0x2000,
                     value
@@ -182,7 +182,7 @@ impl MMU {
             },
             // Object attribute Memory (OAM)
             //
-            0xFE00..0xFEA0 => {
+            0xFE00..=0xFE9F => {
                 self.gpu.write_oam(
                     adress,
                     value
@@ -190,12 +190,12 @@ impl MMU {
             },
             // Not Usable
             // Nintendo says use of this area is prohibited
-            0xFEA0..0xFF00 => {
+            0xFEA0..=0xFEFF => {
                 panic!("Tried to access to a prohibited memory adress");
             },
             // I/0 Registers
             //
-            0xFF00..0xFF80 => {
+            0xFF00..=0xFF7F => {
                 self.io.write(
                     adress,
                     value
@@ -203,13 +203,13 @@ impl MMU {
             }
             // High RAM (HRAM)
             //
-            0xFF80..0xFFFF => {
+            0xFF80..=0xFFFE => {
                 self.hram.write(
                     adress,
                     value
                 );
             }
-            // Interrubp Enable register
+            // Interrupt Enable register
             //
             0xFFFF => {
                 self.ie = value;
@@ -221,10 +221,8 @@ impl MMU {
         &self,
         adress: u16
     ) -> u16 {
-        (
-            ((self.read_byte(adress) as u16) << 8) |
+        ((self.read_byte(adress) as u16) << 8) |
             (self.read_byte(adress + 1) as u16)
-        )
     }
 
     pub fn write_word(
@@ -246,27 +244,27 @@ impl MMU {
         &mut self,
         n_cycles: u32,
     ) {
-        io.update(n_cycles);
-        gpu.update(n_cycles);
+        self.io.update(n_cycles);
+        self.gpu.update(n_cycles);
         // INT 0x60
-        if io.pending_joypad_interruption {
+        if self.io.pending_joypad_interruption {
             self.interrupt_flag |= 0x10;
-            io.pending_joypad_interruption = false;
+            self.io.pending_joypad_interruption = false;
         }
         // INT 0x50
-        if io.pending_timer_interruption {
+        if self.io.pending_timer_interruption {
             self.interrupt_flag |= 0x04;
-            io.pending_timer_interruption = false;
+            self.io.pending_timer_interruption = false;
         }
         // INT 0x48
-        if gpu.pending_stat_interrupt {
+        if self.gpu.pending_stat_interrupt {
             self.interrupt_flag |= 0x02;
-            gpu.pending_stat_interrupt  = false;
+            self.gpu.pending_stat_interrupt  = false;
         }
         // INT 0x40
-        if gpu.pending_vblank_interrupt {
+        if self.gpu.pending_vblank_interrupt {
             self.interrupt_flag |= 0x01;
-            gpu.pending_stat_interrupt  = false;
+            self.gpu.pending_stat_interrupt  = false;
         }
     }
 

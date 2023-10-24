@@ -10,7 +10,7 @@ impl HRAM {
     }
 
     pub fn read(&self, adress: u16) -> u8 {
-        ram[adress - 0xFF80]
+        self.ram[adress - 0xFF80]
     }
 
     pub fn write(
@@ -18,6 +18,6 @@ impl HRAM {
         adress: u16,
         value: u8
     ) {
-        ram[adress - 0xFF80] = value;
+        self.ram[adress - 0xFF80] = value;
     }
 }

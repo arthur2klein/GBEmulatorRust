@@ -3,7 +3,7 @@ use crate::gpu::GPU;
 // The SsBA buttons are select button and are read from bits 3 to 0 when bit 5
 // is 0.
 // The movement buttons read from bits 3 to 0 when bit 4 is 0.
-pub enum Joypad_button {
+pub enum JoypadButton {
     // SsBA buttons
     START,
     SELECT,
@@ -16,12 +16,11 @@ pub enum Joypad_button {
     RIGHT,
 }
 
-pub struct IO {
+pub struct IO<'a> {
     // Joypad
     joypad_input: u8,
     joypad_input_ssba: u8,
     joypad_input_movement: u8,
-    joypad_pending_interruption: bool
     // Serial transfer (should not be used)
     serial_transfer: u16,
     // Timer and divider
@@ -45,7 +44,7 @@ pub struct IO {
 //    bg_palette_data: u8,
 //    obp0: u8,
 //    obp1: u8,
-    gpu: &GPU,
+    gpu: &'a mut GPU,
     // Set to non zero to diasable boot ROM
     disable_boot_rom: u8,
     // Interruptions
@@ -53,13 +52,12 @@ pub struct IO {
     pub pending_timer_interruption: bool,
 }
 
-impl IO {
+impl IO<'_> {
     pub fn new(gpu: &GPU) -> Self {
         Self {
             joypad_input: 0x00,
             joypad_input_ssba: 0x00,
             joypad_input_movement: 0x00,
-            joypad_pending_interruption: false
             serial_transfer: 0x0000,
             divider: 0x00,
             cpu_cycle: 0x0000,
@@ -68,8 +66,8 @@ impl IO {
             timer_control: 0x00,
             gpu,
             disable_boot_rom: 0x00,
-            pub pending_joypad_interruption: false,
-            pub pending_timer_interruption: false,
+            pending_joypad_interruption: false,
+            pending_timer_interruption: false,
         }
     }
     
@@ -99,48 +97,15 @@ impl IO {
             0x07 => {
                 self.timer_control
             },
-//            // LCD
-//            0x40 => {
-//                self.lcd_control
-//            },
-//            0x41 => {
-//                self.lcd_status
-//            },
-//            0x42 => {
-//                self.background_viewport_y
-//            },
-//            0x43 => {
-//                self.background_viewport_x
-//            },
-//            0x44 => {
-//                self.lcd_y_coordinate
-//            },
-//            0x4A => {
-//                self.windoy_y_position
-//            },
-//            0x4B => {
-//                self.window_x_position_plus_sept
-//            },
-//            0x45 => {
-//                self.lyc_compare
-//            },
-//            // Palettes
-//            0x47 => {
-//                self.bg_palette_data
-//            },
-//            0x48 => {
-//                self.obp0
-//            },
-//            0x49 => {
-//                self.obp1
-//            },
-            0x40..0x50 => {
-                gpu.read_lcd(address)
+            // LCD
+            0x40..=0x4F => {
+                self.gpu.read_lcd(address)
             },
             // Set to non zero to diasable boot ROM
             0x50 => {
                 self.disable_boot_rom
             },
+        }
     }
 
     pub fn write(
@@ -152,23 +117,23 @@ impl IO {
             // Joypad
             0x00 => {
                 // The lower nible is read-only
-                self.joypad_input = (
+                self.joypad_input =
                     (self.joypad_input & 0x0F) |
                     (value & 0xF0)
-                );
+                ;
             },
             // Serial transfer (should not be used)
             0x01 => {
-                self.serial_transfer = (
+                self.serial_transfer = 
                     (value as u16) << 8 |
-                    self.serial_transfer 0x00FF
-                );
+                    (self.serial_transfer & 0x00FF)
+                ;
             },
             0x02 => {
-                self.serial_transfer = (
-                    self.serial_transfer 0xFF00 |
+                self.serial_transfer = 
+                    (self.serial_transfer & 0xFF00) |
                     value as u16
-                );
+                ;
             },
             // Timer and divider
             // Writing any value to it will set it to 0.
@@ -184,76 +149,43 @@ impl IO {
             0x07 => {
                 self.timer_control = value;
             },
-//            // LCD
-//            0x40 => {
-//                self.lcd_control
-//            },
-//            0x41 => {
-//                self.lcd_status
-//            },
-//            0x42 => {
-//                self.background_viewport_y
-//            },
-//            0x43 => {
-//                self.background_viewport_x
-//            },
-//            0x44 => {
-//                self.lcd_y_coordinate
-//            },
-//            0x4A => {
-//                self.windoy_y_position
-//            },
-//            0x4B => {
-//                self.window_x_position_plus_sept
-//            },
-//            0x45 => {
-//                self.lyc_compare
-//            },
-//            // Palettes
-//            0x47 => {
-//                self.bg_palette_data
-//            },
-//            0x48 => {
-//                self.obp0
-//            },
-//            0x49 => {
-//                self.obp1
-//            },
-            0x40..0x50 => {
-                gpu.write_lcd(address, value);
+            // LCD
+            0x40..=0x4F => {
+                self.gpu.write_lcd(address, value);
             },
             // Set to non zero to diasable boot ROM
             0x50 => {
                 self.disable_boot_rom = value;
             },
+        }
     }
 
-    pub fn press_button(&mut self, button: Joypad_button) {
+    pub fn press_button(&mut self, button: JoypadButton) {
         // Was a button already being pushed
         let was_pushed = self.joypat_input & 0x0F == 0x0F;
         match button {
-            Joypad_button::START => {
+            JoypadButton::START => {
                 self.joypad_input_ssba &= 0xF7;
             },
-            Joypad_button::SELECT => {
+            JoypadButton::SELECT => {
                 self.joypad_input_ssba &= 0xFB;
             },
-            Joypad_button::B => {
+            JoypadButton::B => {
                 self.joypad_input_ssba &= 0xFD;
             },
-            Joypad_button::A => {
+            JoypadButton::A => {
                 self.joypad_input_ssba &= 0xFE;
             },
-            Joypad_button::DOWN => {
+            JoypadButton::DOWN => {
                 self.joypad_input_movement &= 0xF7;
             },
-            Joypad_button::UP => {
+            JoypadButton::UP => {
                 self.joypad_input_movement &= 0xFB;
             },
-            Joypad_button::LEFT => {
+            JoypadButton::LEFT => {
                 self.joypad_input_movement &= 0xFD;
             },
-            Joypad_button::RIGHT => {
+            JoypadButton::RIGHT => {
                 self.joypad_input_movement &= 0xFE;
             }
         }
@@ -271,30 +203,30 @@ impl IO {
         }
     }
 
-    pub fn release_button(&mut self, button: Button) {
+    pub fn release_button(&mut self, button: JoypadButton) {
         match button {
-            Joypad_button::START => {
+            JoypadButton::START => {
                 self.joypad_input_ssba |= 0x08;
             },
-            Joypad_button::SELECT => {
+            JoypadButton::SELECT => {
                 self.joypad_input_ssba |= 0x04;
             },
-            Joypad_button::B => {
+            JoypadButton::B => {
                 self.joypad_input_ssba |= 0x02;
             },
-            Joypad_button::A => {
+            JoypadButton::A => {
                 self.joypad_input_ssba |= 0x01;
             },
-            Joypad_button::DOWN => {
+            JoypadButton::DOWN => {
                 self.joypad_input_movement |= 0x08;
             },
-            Joypad_button::UP => {
+            JoypadButton::UP => {
                 self.joypad_input_movement |= 0x04;
             },
-            Joypad_button::LEFT => {
+            JoypadButton::LEFT => {
                 self.joypad_input_movement |= 0x02;
             },
-            Joypad_button::RIGHT => {
+            JoypadButton::RIGHT => {
                 self.joypad_input_movement |= 0x01;
             }
         }
@@ -347,10 +279,10 @@ impl IO {
                         (self.cpu_cycle & 0x00FF).wrapping_add(n_ticks)
                     ) & 0xFF00) >> 8
                 },
-            }
-            let did_overflow, self.timer_counter = (
-                self.timer_counter.overflowing_add(increment_timer)
-            );
+            };
+            let (did_overflow, timer_counter) = self.timer_counter
+                .overflowing_add(increment_timer);
+            self.timer_counter = timer_counter;
             // When the value exceeds 0xFF, it is reet to the value specified in
             // TMA (0xFF06) and an interrupt is requested.
             if did_overflow {

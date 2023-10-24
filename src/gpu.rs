@@ -1,19 +1,19 @@
 use crate::screen::Screen;
 
-struct Tile_object {
+struct TileObject {
     y_position: u8,
     x_position: u8,
     tile_index: u8,
     flags: u8
 }
 
-impl Tile_object {
+impl TileObject {
     fn new() -> Self {
         Self {
-            0,
-            0,
-            0,
-            0
+            y_position: 0x00,
+            x_position: 0x00,
+            tile_index: 0x00,
+            flags: 0x00,
         }
     }
     
@@ -44,7 +44,7 @@ impl Tile_object {
 
 pub struct GPU {
     ram: Vec<u8>,
-    object_attribute: Vec<Tile_object>,
+    object_attribute: Vec<TileObject>,
     lcd_control: u8,
     lcd_status: u8,
     background_viewport_y: u8,
@@ -70,7 +70,7 @@ impl GPU {
     pub fn new() -> Self {
         Self {
             ram: vec![0; 0x2000],
-            object_attribues: vec![40; Tile_object::new()],
+            object_attribues: vec![40; TileObject::new()],
             lcd_control: 0,
             lcd_status: 0,
             background_viewport_y: 0,
@@ -331,7 +331,7 @@ impl GPU {
     ///
     /// Specify that a VBlank interruption is pending for the MMU to indicate it
     /// This means that the PPU is wainting for the next frame
-    fn send_stat_interrupt(&mut self) {
+    fn send_vblank_interrupt(&mut self) {
         self.pending_vblank_interrupt = true;
     }
 
@@ -396,7 +396,7 @@ impl GPU {
             self.lcd_y_coordinate += 1;
             //sleep(Duration::from_micros(16740) - time.elapsed.unwrap());
         }
-        screen.update();
+        self.screen.update();
     }
 
     /// Draws a line on the screen
@@ -428,9 +428,9 @@ impl GPU {
         // Sending pixels to the LCD
         // 172 dots (160 pixels wide)
         for x in 0..159 {
-            screen.receive_pixel(
+            self.screen.receive_pixel(
                 x,
-                y,
+                ly,
                 self.draw_pixel(x, ly, obj_in_line)
             );
         }
@@ -457,10 +457,8 @@ impl GPU {
         x_in_tile: u8,
     ) {
         let line_tile = tile_address + y_in_tile * 16;
-        (
-            ((line_tile & (1 << (x_in_tile + 8))) >> (x_in_tile + 8)) +
+        ((line_tile & (1 << (x_in_tile + 8))) >> (x_in_tile + 8)) +
             ((line_tile & (1 << (x_in_tile))) >> (x_in_tile + 7)) 
-        )
     }
 
     /// Returns the color of a pixel of the background
@@ -549,7 +547,7 @@ impl GPU {
             }
             let tile_for_obj = 0x8000 + 16 * obj_in_line[i].tile_index;
             let color_id = self.color_id_in_tile(
-                tile_address,
+                tile_for_obj,
                 y - obj_in_line[i].y_position,
                 if obj_in_line[i].get_x_flip() {
                     x - obj_in_line[i].x_position
@@ -560,7 +558,7 @@ impl GPU {
             if color_id == 0 {
                 continue;
             }
-            is_tranparent = false;
+            is_transparent = false;
             let current_has_priority = obj_in_line[i].get_priority();
             if has_priority && !current_has_priority {
                 continue;
@@ -599,10 +597,11 @@ impl GPU {
     /// **Vec<u32>**: Collections of the indices of objects found in the
     /// current line
     fn objects_in_line(&self, y: u8) -> Vec<u32> {
+        let mut res: Vec<u32> = vec![];
         let obj_size = self.obj_size();
         for i in 0..40 {
             let y_position = self.object_attribute[i].y_position - 16;
-            if y_position <= y and y_position + obj_size > y {
+            if y_position <= y && y_position + obj_size > y {
                 res.push(i);
                 if res.len() == 10 {
                     return res;

@@ -19,7 +19,7 @@ impl Cartridge {
     }
 
     pub fn read_rom(&self, adress: u16) -> u8 {
-        rom[adress]
+        self.rom[adress]
     }
 
     pub fn write_rom(
@@ -27,11 +27,11 @@ impl Cartridge {
         adress: u16,
         value: u8
     ) {
-        rom[adress] = value;
+        self.rom[adress] = value;
     }
 
     pub fn read_ram(&self, adress: u16) -> u8 {
-        ram[adress - 0xA000]
+        self.ram[adress - 0xA000]
     }
 
     pub fn write_ram(
@@ -39,6 +39,6 @@ impl Cartridge {
         adress: u16,
         value: u8
     ) {
-        ram[adress - 0xA000] = value;
+        self.ram[adress - 0xA000] = value;
     }
 }
