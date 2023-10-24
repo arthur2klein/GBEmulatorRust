@@ -1,5 +1,6 @@
 use crate::screen::Screen;
 
+#[derive(Clone)]
 struct TileObject {
     y_position: u8,
     x_position: u8,
@@ -32,14 +33,6 @@ impl TileObject {
     fn get_dmg_palette(&self) -> bool {
         self.flags & 0x10 == 0x10
     }
-
-    fn get_bank(&self) -> bool {
-        self.flags & 0x08 == 0x08
-    }
-
-    fn get_cgb_palette(&self) -> u8 {
-        self.flags & 0x07
-    }
 }
 
 pub struct GPU {
@@ -57,7 +50,8 @@ pub struct GPU {
     bg_palette_data: u8,
     obp0: u8,
     obp1: u8,
-    pending_stat_interrupt: bool,
+    pub pending_stat_interrupt: bool,
+    pub pending_vblank_interrupt: bool,
     screen: Screen,
     cpu_cycle: u16,
 }
@@ -70,7 +64,7 @@ impl GPU {
     pub fn new() -> Self {
         Self {
             ram: vec![0; 0x2000],
-            object_attribues: vec![40; TileObject::new()],
+            object_attribute: vec![TileObject::new(); 40],
             lcd_control: 0,
             lcd_status: 0,
             background_viewport_y: 0,
@@ -83,6 +77,7 @@ impl GPU {
             obp0: 0,
             obp1: 0,
             pending_stat_interrupt: false,
+            pending_vblank_interrupt: false,
             screen: Screen::new(),
             cpu_cycle: 0,
         }
@@ -114,7 +109,7 @@ impl GPU {
                 self.lcd_y_coordinate
             },
             0x4A => {
-                self.windoy_y_position
+                self.window_y_position
             },
             0x4B => {
                 self.window_x_position_plus_sept
@@ -132,6 +127,9 @@ impl GPU {
             0x49 => {
                 self.obp1
             },
+            _ => {
+                panic!("Wrong address in lcd");
+            }
         }
     }
 
@@ -140,7 +138,7 @@ impl GPU {
     /// # Arguments
     /// **address (u16)**: Address to write to
     /// **value (u8)**: Value to write at this address
-    pub fn write_lcd(&self, address: u16, value: u8) {
+    pub fn write_lcd(&mut self, address: u16, value: u8) {
         match address {
             // LCD
             0x40 => {
@@ -159,7 +157,7 @@ impl GPU {
                 self.lcd_y_coordinate = value;
             },
             0x4A => {
-                self.windoy_y_position = value;
+                self.window_y_position = value;
             },
             0x4B => {
                 self.window_x_position_plus_sept = value;
@@ -177,6 +175,9 @@ impl GPU {
             0x49 => {
                 self.obp1 = value;
             },
+            _ => {
+                panic!("Wrong address in lcd");
+            }
         }
     }
 
@@ -188,7 +189,7 @@ impl GPU {
     /// # Returns
     /// **u8**: Value read at this address
     pub fn read_ram(&self, address: u16) -> u8 {
-        self.ram[address - 0x8000]
+        self.ram[(address - 0x8000) as usize]
     }
     
     /// Write the given value in the given address of the VRAM
@@ -201,7 +202,7 @@ impl GPU {
         address: u16,
         value: u8
     ) {
-        self.ram[address - 0x8000] = value;
+        self.ram[(address - 0x8000) as usize] = value;
     }
 
     /// Read a value in the given address of the OAM
@@ -216,16 +217,19 @@ impl GPU {
        let byte = (address & 0x00FF) & 0x0003;
        match byte {
            0 => {
-               self.object_attribute[entry].y_position
+               self.object_attribute[entry as usize].y_position
            },
            1 => {
-               self.object_attribute[entry].x_position
+               self.object_attribute[entry as usize].x_position
            },
            2 => {
-               self.object_attribute[entry].tile_index
+               self.object_attribute[entry as usize].tile_index
            },
            3 => {
-               self.object_attribute[entry].flags
+               self.object_attribute[entry as usize].flags
+           },
+           _ => {
+               panic!("Wrong attribute in oam");
            }
        }
     }
@@ -244,16 +248,19 @@ impl GPU {
        let byte = (address & 0x00FF) & 0x0003;
        match byte {
            0 => {
-               self.object_attribute[entry].y_position = value;
+               self.object_attribute[entry as usize].y_position = value;
            },
            1 => {
-               self.object_attribute[entry].x_position = value;
+               self.object_attribute[entry as usize].x_position = value;
            },
            2 => {
-               self.object_attribute[entry].tile_index = value;
+               self.object_attribute[entry as usize].tile_index = value;
            },
            3 => {
-               self.object_attribute[entry].flags = value;
+               self.object_attribute[entry as usize].flags = value;
+           },
+           _ => {
+               panic!("Wrong attribute in oam");
            }
        }
     }
@@ -262,7 +269,7 @@ impl GPU {
     ///
     /// # Returns
     /// **bool**: True iff the screen should be displayed
-    fn is_enabled(&self) {
+    fn is_enabled(&self) -> bool {
         self.lcd_control & 0x80 == 0x80
     }
 
@@ -379,17 +386,20 @@ impl GPU {
         if (self.cpu_cycle & 0x3FFF + n_cycles) >= 0x4000 {
             self.draw_lines();
         }
-        self.cpu_cycle = self.cpu.cycle.wrapping_add(n_cycles);
+        self.cpu_cycle = self.cpu_cycle.wrapping_add(n_cycles);
     }
 
     /// Draws one frame
     ///
     /// One frame lasts 16.74 ms
     fn draw_lines(&mut self) {
+        if !self.is_enabled() {
+            return;
+        }
         self.lcd_y_coordinate = 0;
         while self.lcd_y_coordinate < 154 {
             //let time = SystemTime::now();
-            if self.lcd_y_coordinate == self.lcd_y_compare {
+            if self.lcd_y_coordinate == self.lyc_compare {
                 self.lyc_equal_ly();
             }
             self.draw_line();
@@ -406,7 +416,7 @@ impl GPU {
         // 4 dots per CPU cycle (4.194 MHz)
         let ly = self.lcd_y_coordinate;
         if ly == 144 {
-            self.send_vblank_interrup();
+            self.send_vblank_interrupt();
         }
         if ly > 143 {
             self.switch_mode_to(1);
@@ -428,10 +438,11 @@ impl GPU {
         // Sending pixels to the LCD
         // 172 dots (160 pixels wide)
         for x in 0..159 {
+            let pixel = self.draw_pixel(x, ly, &obj_in_line);
             self.screen.receive_pixel(
                 x,
                 ly,
-                self.draw_pixel(x, ly, obj_in_line)
+                pixel
             );
         }
         self.switch_mode_to(0);
@@ -449,16 +460,21 @@ impl GPU {
     /// **y_in_tile (u8)**: line in the tile
     ///
     /// # Returns
+    /// **u8**: Color id of the pixel
+    ///
+    /// # Returns
     /// Color id of the given pixel in the given tile
     fn color_id_in_tile(
         &self,
         tile_address: u16,
         y_in_tile: u8,
         x_in_tile: u8,
-    ) {
-        let line_tile = tile_address + y_in_tile * 16;
-        ((line_tile & (1 << (x_in_tile + 8))) >> (x_in_tile + 8)) +
+    ) -> u8{
+        let line_tile = tile_address + (y_in_tile * 16) as u16;
+        (
+            ((line_tile & (1 << (x_in_tile + 8))) >> (x_in_tile + 8)) +
             ((line_tile & (1 << (x_in_tile))) >> (x_in_tile + 7)) 
+        ) as u8
     }
 
     /// Returns the color of a pixel of the background
@@ -470,10 +486,10 @@ impl GPU {
     /// # Returns
     /// **u8**: Color of the given pixel from the background
     fn color_background(&self, x: u8, y: u8) -> u8 {
-        let y_in_map = (self.background_viewport_y + y) % 256;
-        let x_in_map = (self.background_viewport_x + x) % 256;
-        let tile_index = x_in_map / 8 + (y_in_map / 8) * 256;
-        let tile_address = self.background_tile_data() + tile_index * 2; 
+        let y_in_map = self.background_viewport_y + y;
+        let x_in_map = self.background_viewport_x + x;
+        let tile_index: u16 = x_in_map as u16 / 8 + (y_in_map as u16 / 8) * 256;
+        let tile_address = self.background_tile_map() + (tile_index * 2) as u16; 
         let x_in_tile = x_in_map % 8;
         let y_in_tile = y_in_map % 8;
         let color_id = self.color_id_in_tile(
@@ -496,14 +512,11 @@ impl GPU {
     fn color_window(&self, x: u8, y: u8) -> u8 {
         let y_in_map = self.window_y_position + y;
         let x_in_map = self.window_x_position_plus_sept + x;
-        if !(
-            (y_in_map >= 0 && y_in_map < 143) &&
-            (x_in_map >= 0 && x_in_map < 166)
-        ) {
+        if (y_in_map >= 143) || (x_in_map >= 166) {
             return 4;
         }
-        let tile_index = x_in_map / 8 + (y_in_map / 8) * 256;
-        let tile_address = self.window_tile_map() + tile_index * 2; 
+        let tile_index = x_in_map as u16 / 8 + (y_in_map as u16 / 8) * 256;
+        let tile_address = self.window_tile_map() + (tile_index * 2); 
         let x_in_tile = x_in_map % 8;
         let y_in_tile = y_in_map % 8;
         let color_id = self.color_id_in_tile(
@@ -530,7 +543,7 @@ impl GPU {
         &mut self,
         x: u8,
         y: u8,
-        obj_in_line: Vec<u32>
+        obj_in_line: &Vec<u32>
     ) -> u8 {
         let color_from_background = self.color_background(x, y);
         let color_from_window = self.color_window(x, y);
@@ -539,40 +552,49 @@ impl GPU {
         let mut color_from_obj: u8 = 0;
         let mut is_transparent: bool = true;
         for i in obj_in_line.iter() {
+            let object = &self.object_attribute[
+                obj_in_line[*i as usize] as usize
+            ];
             if !(
-                obj_in_line[i].x_position <= x &&
-                obj_in_line[i].x_position + 8 > x
+                object.x_position <= x &&
+                object.x_position + 8 > x
             ) {
                 continue;
             }
-            let tile_for_obj = 0x8000 + 16 * obj_in_line[i].tile_index;
+            let tile_for_obj = 0x8000 + (16 * object.tile_index) as u16;
             let color_id = self.color_id_in_tile(
                 tile_for_obj,
-                y - obj_in_line[i].y_position,
-                if obj_in_line[i].get_x_flip() {
-                    x - obj_in_line[i].x_position
+                if object.get_y_flip() {
+                    (y - object.y_position) % 8
                 } else {
-                    7 - (x + obj_in_line[i].x_position)
+                    (15 - (y + object.y_position)) % 8
+                },
+                if object.get_x_flip() {
+                    x - object.x_position
+                } else {
+                    7 - (x + object.x_position)
                 },
             );
             if color_id == 0 {
                 continue;
             }
             is_transparent = false;
-            let current_has_priority = obj_in_line[i].get_priority();
+            let current_has_priority = object.get_priority();
             if has_priority && !current_has_priority {
                 continue;
             }
-            if x_position < obj_in_line[i].x_position {
+            if x_position < object.x_position {
                 continue;
             }
-            color_from_obj = (if self.obj_in_line[i].get_dmg_palette() {
+            has_priority = current_has_priority;
+            x_position = object.x_position;
+            color_from_obj = (if object.get_dmg_palette() {
                 self.obp1
             } else {
                 self.obp0
             } >> (2 * color_id)) & 0x3;
         }
-        if !is_transparent {
+        if !is_transparent && self.should_draw_objects() {
             color_from_obj
         } else if self.should_draw_window_and_background() {
             if self.should_draw_window() && color_from_window != 4 {
@@ -602,7 +624,7 @@ impl GPU {
         for i in 0..40 {
             let y_position = self.object_attribute[i].y_position - 16;
             if y_position <= y && y_position + obj_size > y {
-                res.push(i);
+                res.push(i as u32);
                 if res.len() == 10 {
                     return res;
                 }

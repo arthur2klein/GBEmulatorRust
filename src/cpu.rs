@@ -277,7 +277,7 @@ impl Registers {
     /// // But it is changed for the next evaluation
     /// assert_eq!(new_registers.get_hl(), 0x1233);
     /// ```
-    fn get_hld(&self) -> u16 {
+    fn get_hld(&mut self) -> u16 {
         let res = self.get_hl();
         self.set_hl(res - 1);
         res
@@ -301,7 +301,7 @@ impl Registers {
     /// // But it is changed for the next evaluation
     /// assert_eq!(new_registers.get_hl(), 0x1235);
     /// ```
-    fn get_hli(&self) -> u16 {
+    fn get_hli(&mut self) -> u16 {
         let res = self.get_hl();
         self.set_hl(res + 1);
         res
@@ -339,7 +339,7 @@ impl Registers {
     /// // Only the carry flag has been set
     /// assert_eq!(new_registers.f, 0x10);
     /// ```
-    fn set_carry(&self, value: bool) {
+    fn set_carry(&mut self, value: bool) {
         if value {
             self.f |= 0b00010000;
         } else {
@@ -381,7 +381,7 @@ impl Registers {
     /// // Only the half carry flag has been set
     /// assert_eq!(new_registers.f, 0x20);
     /// ```
-    fn set_half(&self, value: bool) {
+    fn set_half(&mut self, value: bool) {
         if value {
             self.f |= 0b00100000;
         } else {
@@ -423,7 +423,7 @@ impl Registers {
     /// // Only the substraction has been set
     /// assert_eq!(new_registers.f, 0x40);
     /// ```
-    fn set_sub(&self, value: bool) {
+    fn set_sub(&mut self, value: bool) {
         if value {
             self.f |= 0b01000000;
         } else {
@@ -465,7 +465,7 @@ impl Registers {
     /// // Only the zero has been set
     /// assert_eq!(new_registers.f, 0x80);
     /// ```
-    fn set_zero(&self, value: bool) {
+    fn set_zero(&mut self, value: bool) {
         if value {
             self.f |= 0b10000000;
         } else {
@@ -475,12 +475,12 @@ impl Registers {
 }
 
 /// The CPU of the gameboy
-pub struct CPU<'a> {
+pub struct CPU {
     /// The registers used by the CPU to store values
     registers: Registers,
     /// The memory management unit allows the CPU to communicate with the
     /// memory
-    mmu: MMU<'a>,
+    mmu: MMU,
     /// Stops the CPU until an interruption is pending
     is_halted: bool,
     /// Enable interruptions
@@ -492,10 +492,10 @@ pub struct CPU<'a> {
     /// instruction
     di: u32,
     /// Should pending interrpution be managed?
-    emi: bool,
+    ime: bool,
 }
 
-impl CPU<'_> {
+impl CPU {
     /// Create the CPU of the gameboy
     ///
     /// # Returns
@@ -513,7 +513,7 @@ impl CPU<'_> {
             is_halted: false,
             ei: 0,
             di: 0,
-            emi: true,
+            ime: true,
         }
     }
 
@@ -534,6 +534,8 @@ impl CPU<'_> {
     fn fetchbyte(&mut self) -> u8 {
         let res = self.mmu.read_byte(self.registers.pc);
         self.registers.pc = self.registers.pc.wrapping_add(1);
+        sleep(Duration::from_secs(1));
+        println!("pc = {}, res = {}", self.registers.pc, res);
         res
     }
 
@@ -578,7 +580,7 @@ impl CPU<'_> {
     /// ```rust
     /// let mut new_cpu = CPU::new("test.gb");
     /// // Deactivate interruption
-    /// new_cpu.emi = false;
+    /// new_cpu.ime = false;
     /// new_cpu.halt();
     /// // Now the CPU will only execute NOP
     /// ```
@@ -679,8 +681,9 @@ impl CPU<'_> {
             let time_used = self.execute_step();
             // One cycle lasts 2385ns
             sleep(
-                Duration::from_nanos((2385 * time_used) as u64) -
-                time.elapsed().unwrap()
+                Duration::from_nanos((2385 * time_used) as u64).saturating_sub(
+                    time.elapsed().unwrap()
+                )
             );
         }
     }
@@ -695,9 +698,10 @@ impl CPU<'_> {
     /// # Examples
     /// ```rust
     /// let new_cpu = CPU::new("test.gb");
-    /// new_cpu.receiveOp();
+    /// new_cpu.receive_op();
     /// ```
-    fn receiveOp(&mut self) -> u32 {
+    fn receive_op(&mut self) -> u32 {
+        assert!(self.registers.pc < 0x2000);
         let op = self.fetchbyte();
         match op {
             // NOP
@@ -706,9 +710,8 @@ impl CPU<'_> {
             },
             // LD BC, d16
             0x01 => {
-                self.registers.set_bc(
-                    self.fetchword()
-                );
+                let word = self.fetchword();
+                self.registers.set_bc(word);
                 12
             },
             // LD (BC), A
@@ -749,8 +752,9 @@ impl CPU<'_> {
             },
             // LD (a16), SP
             0x08 => {
+                let word = self.fetchword();
                 self.mmu.write_word(
-                    self.fetchword(),
+                    word,
                     self.registers.sp
                 );
                 20
@@ -798,9 +802,8 @@ impl CPU<'_> {
             },
             // LD DE, D16
             0x11 => {
-                self.registers.set_de(
-                    self.fetchword()
-                );
+                let word = self.fetchword();
+                self.registers.set_de(word);
                 12
             },
             // LD (DE), A
@@ -898,9 +901,8 @@ impl CPU<'_> {
             },
             // LD HL, d16
             0x21 => {
-                self.registers.set_hl(
-                    self.fetchword()
-                );
+                let word = self.fetchword();
+                self.registers.set_hl(word);
                 12
             },
             // LD (HL+), A
@@ -1020,35 +1022,36 @@ impl CPU<'_> {
             },
             // INC (HL)
             0x34 => {
-                let value = self.mmu.read_byte(
-                    self.registers.get_hl()
+                let value = self.inc(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
                 );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.inc(
-                        value
-                    )
+                    value
                 );
                 12
             },
             // DEC (HL)
             0x35 => {
-                let value = self.mmu.read_byte(
-                    self.registers.get_hl()
+                let value = self.dec(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
                 );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.dec(
-                        value
-                    )
+                    value
                 );
                 12
             },
             // LD (HL), d8
             0x36 => {
+                let word = self.fetchbyte();
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.fetchbyte()
+                    word
                 );
                 12
             },
@@ -1950,9 +1953,8 @@ impl CPU<'_> {
             },
             // POP BC
             0xC1 => {
-                self.registers.set_bc(
-                    self.pop()
-                );
+                let value = self.pop();
+                self.registers.set_bc(value);
                 12
             },
             // JP NZ, a16
@@ -1992,9 +1994,8 @@ impl CPU<'_> {
             },
             // ADD A, d8
             0xC6 => {
-                self.add(
-                    self.fetchbyte()
-                );
+                let value = self.fetchbyte();
+                self.add(value);
                 8
             },
             // RST 00H
@@ -2053,9 +2054,8 @@ impl CPU<'_> {
             },
             // ADC A, d8
             0xCE => {
-                self.adc(
-                    self.fetchbyte()
-                );
+                let value = self.fetchbyte();
+                self.adc(value);
                 8
             },
             // RST 08H
@@ -2074,9 +2074,8 @@ impl CPU<'_> {
             },
             // POP DE
             0xD1 => {
-                self.registers.set_de(
-                    self.pop()
-                );
+                let value = self.pop();
+                self.registers.set_de(value);
                 12
             },
             // JP NC, a16
@@ -2111,9 +2110,8 @@ impl CPU<'_> {
             },
             // SUB d8
             0xD6 => {
-                self.sub(
-                    self.fetchbyte()
-                );
+                let value = self.fetchbyte();
+                self.sub(value);
                 8
             },
             // RST 10H
@@ -2162,9 +2160,8 @@ impl CPU<'_> {
             },
             // SBC A, d8
             0xDE => {
-                self.sbc(
-                    self.fetchbyte()
-                );
+                let value = self.fetchbyte();
+                self.sbc(value);
                 8
             },
             // RST 18H
@@ -2174,17 +2171,17 @@ impl CPU<'_> {
             },
             // LDH (a8), A
             0xE0 => {
+                let value = self.fetchbyte();
                 self.mmu.write_byte(
-                    0xFF00 | self.fetchbyte() as u16,
+                    0xFF00 | value as u16,
                     self.registers.a
                 );
                 12
             },
             // POP HL
             0xE1 => {
-                self.registers.set_hl(
-                    self.pop()
-                );
+                let value = self.pop();
+                self.registers.set_hl(value);
                 12
             },
             // LDH (C), A
@@ -2204,9 +2201,8 @@ impl CPU<'_> {
             },
             // AND d8
             0xE6 => {
-                self.and(
-                    self.fetchbyte()
-                );
+                let value = self.fetchbyte();
+                self.and(value);
                 8
             },
             // RST 20H
@@ -2216,7 +2212,7 @@ impl CPU<'_> {
             },
             // ADD SP, r8
             0xE8 => {
-                self.registers.sp = self.addr8(self.registers.SP);
+                self.registers.sp = self.addr8(self.registers.sp);
                 16
             },
             // JP (HL)
@@ -2226,17 +2222,17 @@ impl CPU<'_> {
             },
             // LD (a16), A
             0xEA => {
+                let value = self.fetchword();
                 self.mmu.write_byte(
-                    self.fetchword(),
+                    value,
                     self.registers.a
                 );
                 16
             },
             // XOR d8
             0xEE => {
-                self.xor(
-                    self.fetchbyte()
-                );
+                let value = self.fetchbyte();
+                self.xor(value);
                 8
             },
             // RST 28H
@@ -2246,15 +2242,17 @@ impl CPU<'_> {
             },
             // LDH A, (a8)
             0xF0 => {
+                let value = self.fetchbyte();
                 self.registers.a = self.mmu.read_byte(
-                    0xFF00 | self.fetchbyte() as u16
+                    0xFF00 | value as u16
                 );
                 12
             },
             // POP AF
             0xF1 => {
+                let value = self.pop();
                 self.registers.set_af(
-                    self.pop() & 0xFFF0
+                    value & 0xFFF0
                 );
                 12
             },
@@ -2281,9 +2279,8 @@ impl CPU<'_> {
             },
             // OR d8
             0xF6 => {
-                self.or(
-                    self.fetchbyte()
-                );
+                let value = self.fetchbyte();
+                self.or(value);
                 8
             },
             // RST 30H
@@ -2293,9 +2290,8 @@ impl CPU<'_> {
             },
             // LD HL, SP+r8
             0xF8 => {
-                self.registers.set_hl(
-                    self.addr8(self.registers.sp)
-                );
+                let value = self.addr8(self.registers.sp);
+                self.registers.set_hl(value);
                 12
             },
             // LD SP, HL
@@ -2305,9 +2301,8 @@ impl CPU<'_> {
             },
             // LD A, (a16)
             0xFA => {
-                self.registers.a = self.mmu.read_byte(
-                    self.fetchword()
-                );
+                let value = self.fetchword();
+                self.registers.a = self.mmu.read_byte(value);
                 12
             },
             // EI
@@ -2317,9 +2312,8 @@ impl CPU<'_> {
             },
             // CP d8
             0xFE => {
-                self.cp(
-                    self.fetchbyte()
-                );
+                let value = self.fetchbyte();
+                self.cp(value);
                 8
             },
             // RST 38H
@@ -2330,7 +2324,6 @@ impl CPU<'_> {
             // Si code non trouvé
             _ => {
                 panic!("OpCode not found");
-                0
             }
         }
     }
@@ -2394,13 +2387,14 @@ impl CPU<'_> {
             },
             // RLC (HL)
             0x06 => {
+                let value = self.rlc(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
+                );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.rlc(
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
-                    )
+                    value
                 );
                 16
             },
@@ -2455,13 +2449,14 @@ impl CPU<'_> {
             },
             // RRC (HL)
             0x0E => {
+                let value = self.rrc(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
+                );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.rrc(
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
-                    )
+                    value
                 );
                 16
             },
@@ -2516,13 +2511,14 @@ impl CPU<'_> {
             },
             // RL (HL)
             0x16 => {
+                let value = self.rl(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
+                );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.rl(
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
-                    )
+                    value
                 );
                 16
             },
@@ -2577,13 +2573,14 @@ impl CPU<'_> {
             },
             // RR (HL)
             0x1E => {
+                let value = self.rr(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
+                );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.rr(
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
-                    )
+                    value
                 );
                 16
             },
@@ -2638,13 +2635,14 @@ impl CPU<'_> {
             },
             // SLA (HL)
             0x26 => {
+                let value = self.sla(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
+                );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.sla(
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
-                    )
+                    value
                 );
                 16
             },
@@ -2699,13 +2697,14 @@ impl CPU<'_> {
             },
             // SRA (HL)
             0x2E => {
+                let value = self.sra(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
+                );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.sra(
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
-                    )
+                    value
                 );
                 16
             },
@@ -2760,13 +2759,14 @@ impl CPU<'_> {
             },
             // SWAP (HL)
             0x36 => {
+                let value = self.swap(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
+                );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.swap(
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
-                    )
+                    value
                 );
                 16
             },
@@ -2821,13 +2821,14 @@ impl CPU<'_> {
             },
             // SRL (HL)
             0x3E => {
+                let value = self.srl(
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
+                    )
+                );
                 self.mmu.write_byte(
                     self.registers.get_hl(),
-                    self.srl(
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
-                    )
+                    value
                 );
                 16
             },
@@ -3230,13 +3231,15 @@ impl CPU<'_> {
             },
             // RES 0, (HL)
             0x86 => {
-                self.registers.set_hl(
-                    self.res(
-                        0,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.res(
+                    0,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3277,13 +3280,15 @@ impl CPU<'_> {
             },
             // RES 1, (HL)
             0x8E => {
-                self.registers.set_hl(
-                    self.res(
-                        1,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.res(
+                    1,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3324,13 +3329,15 @@ impl CPU<'_> {
             },
             // RES 2, (HL)
             0x96 => {
-                self.registers.set_hl(
-                    self.res(
-                        2,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.res(
+                    2,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3371,13 +3378,15 @@ impl CPU<'_> {
             },
             // RES 3, (HL)
             0x9E => {
-                self.registers.set_hl(
-                    self.res(
-                        3,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.res(
+                    3,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3418,13 +3427,15 @@ impl CPU<'_> {
             },
             // RES 4, (HL)
             0xA6 => {
-                self.registers.set_hl(
-                    self.res(
-                        4,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.res(
+                    4,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3465,13 +3476,15 @@ impl CPU<'_> {
             },
             // RES 5, (HL)
             0xAE => {
-                self.registers.set_hl(
-                    self.res(
-                        5,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.res(
+                    5,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3512,13 +3525,15 @@ impl CPU<'_> {
             },
             // RES 6, (HL)
             0xB6 => {
-                self.registers.set_hl(
-                    self.res(
-                        6,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.res(
+                    6,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3559,13 +3574,15 @@ impl CPU<'_> {
             },
             // RES 7, (HL)
             0xBE => {
-                self.registers.set_hl(
-                    self.res(
-                        7,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.res(
+                    7,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3606,13 +3623,15 @@ impl CPU<'_> {
             },
             // SET 0, (HL)
             0xC6 => {
-                self.registers.set_hl(
-                    self.set(
-                        0,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.set(
+                    0,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3653,13 +3672,15 @@ impl CPU<'_> {
             },
             // SET 1, (HL)
             0xCE => {
-                self.registers.set_hl(
-                    self.set(
-                        1,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.set(
+                    1,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3700,13 +3721,15 @@ impl CPU<'_> {
             },
             // SET 2, (HL)
             0xD6 => {
-                self.registers.set_hl(
-                    self.set(
-                        2,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.set(
+                    2,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3747,13 +3770,15 @@ impl CPU<'_> {
             },
             // SET 3, (HL)
             0xDE => {
-                self.registers.set_hl(
-                    self.set(
-                        3,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.set(
+                    3,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3794,13 +3819,15 @@ impl CPU<'_> {
             },
             // SET 4, (HL)
             0xE6 => {
-                self.registers.set_hl(
-                    self.set(
-                        4,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.set(
+                    4,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3841,13 +3868,15 @@ impl CPU<'_> {
             },
             // SET 5, (HL)
             0xEE => {
-                self.registers.set_hl(
-                    self.set(
-                        5,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.set(
+                    5,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3888,13 +3917,15 @@ impl CPU<'_> {
             },
             // SET 6, (HL)
             0xF6 => {
-                self.registers.set_hl(
-                    self.set(
-                        6,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.set(
+                    6,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3935,13 +3966,15 @@ impl CPU<'_> {
             },
             // SET 7, (HL)
             0xFE => {
-                self.registers.set_hl(
-                    self.set(
-                        7,
-                        self.mmu.read_byte(
-                            self.registers.get_hl()
-                        )
+                let value = self.set(
+                    7,
+                    self.mmu.read_byte(
+                        self.registers.get_hl()
                     )
+                );
+                self.mmu.write_byte(
+                    self.registers.get_hl(),
+                    value
                 );
                 16
             },
@@ -3950,15 +3983,10 @@ impl CPU<'_> {
                 self.registers.a = self.set(7, self.registers.a);
                 8
             },
-            // Si code non trouvé
-            _ => {
-                panic!("OpCode not found");
-                0
-            }
         }
     }
 
-    /// Updates the value of emi
+    /// Updates the value of ime
     ///
     /// Activate interruption handing 1 instruction after ei.  
     /// Deactivate interruption handing 1 instruction after di.  
@@ -3968,21 +3996,22 @@ impl CPU<'_> {
     /// let mut new_cpu = CPU::new("test.gb");
     /// new_cpu.di = 2;
     /// // emi is not deactivated after one update
-    /// new_cpu.update_emi();
+    /// new_cpu.update_ime();
     /// assert!(new_cpu.emi);
     /// // emi is deactivated after the second update
-    /// new_cpu.update_emi();
+    /// new_cpu.update_ime();
     /// assert!(!new_cpu.emi);
     /// ```
-    fn update_emi(&mut self) {
+    fn update_ime(&mut self) {
         match self.di {
             2 => {
                 self.di = 1;
             },
             1 => {
                 self.di = 0;
-                self.emi = false;
-            }
+                self.ime = false;
+            },
+            _ => {}
         }
         match self.ei {
             2 => {
@@ -3990,8 +4019,9 @@ impl CPU<'_> {
             },
             1 => {
                 self.ei = 0;
-                self.emi = true;
-            }
+                self.ime = true;
+            },
+            _ => {}
         }
     }
 
@@ -4074,7 +4104,7 @@ impl CPU<'_> {
     /// # Returns
     /// **u32**: Number of CPU cycles used for the step
     pub fn execute_step(&mut self) -> u32 {
-        self.update_emi();
+        self.update_ime();
         let time_interruption = self.manage_interruptions();
         if time_interruption != 0 {
             self.mmu.update(time_interruption);
@@ -4084,7 +4114,7 @@ impl CPU<'_> {
             self.mmu.update(4);
             return 4;
         }
-        let res = self.receiveOp();
+        let res = self.receive_op();
         self.mmu.update(res);
         res
     }
@@ -4426,13 +4456,13 @@ impl CPU<'_> {
     /// ```
     fn cp(&mut self, value: u8) {
         let (new_value, did_overflow) = self.registers.a.overflowing_sub(value);
-        self.flags.set_zero(
+        self.registers.set_zero(
             new_value == 0
         );
-        self.flags.set_sub(
+        self.registers.set_sub(
             true
         );
-        self.flags.set_carry(
+        self.registers.set_carry(
             did_overflow
         );
         self.registers.set_half(
@@ -4941,7 +4971,7 @@ impl CPU<'_> {
     /// let res = new_cpu.res(2, new_cpu.registers.a);
     /// assert_eq!(res, 0x00);
     /// ```
-    fn res(&mut self, bit: u32, value: u8) {
+    fn res(&mut self, bit: u32, value: u8) -> u8 {
         value & !((1 << bit) as u8)
     }
 
@@ -4964,7 +4994,7 @@ impl CPU<'_> {
     /// let res = new_cpu.set(2, new_cpu.registers.a);
     /// assert_eq!(res, 0x04);
     /// ```
-    fn set(&mut self, bit: u32, value: u8) {
+    fn set(&mut self, bit: u32, value: u8) -> u8 {
         value | ((1 << bit) as u8)
     }
 

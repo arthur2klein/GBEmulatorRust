@@ -1,5 +1,3 @@
-use crate::gpu::GPU;
-
 // The SsBA buttons are select button and are read from bits 3 to 0 when bit 5
 // is 0.
 // The movement buttons read from bits 3 to 0 when bit 4 is 0.
@@ -16,7 +14,7 @@ pub enum JoypadButton {
     RIGHT,
 }
 
-pub struct IO<'a> {
+pub struct IO {
     // Joypad
     joypad_input: u8,
     joypad_input_ssba: u8,
@@ -29,22 +27,6 @@ pub struct IO<'a> {
     timer_counter: u8,
     timer_modulo: u8,
     timer_control: u8,
-//    // LCD Control
-//    lcd_control: u8,
-//    // LCD status registers
-//    lcd_status: u8,
-//    lcd_y_coordinate: u8,
-//    lyc_compare: u8,
-//    // LCD Position and scrolling
-//    background_viewport_y: u8,
-//    background_viewport_x: u8,
-//    windoy_y_position: u8,
-//    window_x_position_plus_sept: u8,
-//    // Palettes
-//    bg_palette_data: u8,
-//    obp0: u8,
-//    obp1: u8,
-    gpu: &'a mut GPU,
     // Set to non zero to diasable boot ROM
     disable_boot_rom: u8,
     // Interruptions
@@ -52,8 +34,8 @@ pub struct IO<'a> {
     pub pending_timer_interruption: bool,
 }
 
-impl IO<'_> {
-    pub fn new(gpu: &GPU) -> Self {
+impl IO {
+    pub fn new() -> Self {
         Self {
             joypad_input: 0x00,
             joypad_input_ssba: 0x00,
@@ -64,7 +46,6 @@ impl IO<'_> {
             timer_counter: 0x00,
             timer_modulo: 0x00,
             timer_control: 0x00,
-            gpu,
             disable_boot_rom: 0x00,
             pending_joypad_interruption: false,
             pending_timer_interruption: false,
@@ -97,14 +78,13 @@ impl IO<'_> {
             0x07 => {
                 self.timer_control
             },
-            // LCD
-            0x40..=0x4F => {
-                self.gpu.read_lcd(address)
-            },
             // Set to non zero to diasable boot ROM
             0x50 => {
                 self.disable_boot_rom
             },
+            _ => {
+                panic!("Wrong address in io");
+            }
         }
     }
 
@@ -149,20 +129,19 @@ impl IO<'_> {
             0x07 => {
                 self.timer_control = value;
             },
-            // LCD
-            0x40..=0x4F => {
-                self.gpu.write_lcd(address, value);
-            },
             // Set to non zero to diasable boot ROM
             0x50 => {
                 self.disable_boot_rom = value;
             },
+            _ => {
+                panic!("Wrong address in io");
+            }
         }
     }
 
     pub fn press_button(&mut self, button: JoypadButton) {
         // Was a button already being pushed
-        let was_pushed = self.joypat_input & 0x0F == 0x0F;
+        let was_pushed = self.joypad_input & 0x0F == 0x0F;
         match button {
             JoypadButton::START => {
                 self.joypad_input_ssba &= 0xF7;
@@ -241,16 +220,23 @@ impl IO<'_> {
         }
     }
 
+    fn listen_for_buttons(&mut self) {
+        // TODO
+    }
+
     pub fn update(
         &mut self,
         n_ticks: u32
     ) {
+        self.listen_for_buttons();
         // The clock frequency of the CPU is 4194304 Hz
         // The divider increment frequency is  16384 Hz (every 256 cycle)
-        let increment_divider = (
-            ((self.cpu_cycle & 0x00FF).wrapping_add(n_ticks)) & 0xFF00
-        ) >> 8;
-        self.divider.wrapping_add(increment_divider);
+        let increment_divider = ((
+            ((self.cpu_cycle & 0x00FF).wrapping_add(
+                (n_ticks & 0xFFFF) as u16
+            )) & 0xFF00
+        ) >> 8) as u8;
+        self.divider = self.divider.wrapping_add(increment_divider);
         // The timer is incremented at the clock frequency specified by the TAC
         // register (0xFF07)
         if self.timer_control & 0x20 == 0x20 {
@@ -258,30 +244,33 @@ impl IO<'_> {
                 // Frequency: 4096 Hz (1024 cycles)
                 0 => {
                     ((
-                        (self.cpu_cycle & 0x03FF).wrapping_add(n_ticks)
+                        (self.cpu_cycle & 0x03FF).wrapping_add(n_ticks as u16)
                     ) & 0xFC00) >> 10
                 },
                 // Frequency: 262144 Hz (16 cycles)
                 1 => {
                     ((
-                        (self.cpu_cycle & 0x000F).wrapping_add(n_ticks)
+                        (self.cpu_cycle & 0x000F).wrapping_add(n_ticks as u16)
                     ) & 0xFFF0) >> 4
                 },
                 // Frequency: 65536 Hz (64 cycles)
                 2 => {
                     ((
-                        (self.cpu_cycle & 0x003F).wrapping_add(n_ticks)
+                        (self.cpu_cycle & 0x003F).wrapping_add(n_ticks as u16)
                     ) & 0xFFC0) >> 6
                 },
                 // Frequency: 16384 Hz (256 cycles)
                 3 => {
                     ((
-                        (self.cpu_cycle & 0x00FF).wrapping_add(n_ticks)
+                        (self.cpu_cycle & 0x00FF).wrapping_add(n_ticks as u16)
                     ) & 0xFF00) >> 8
                 },
+                _ => {
+                    panic!("Invalid increment");
+                }
             };
-            let (did_overflow, timer_counter) = self.timer_counter
-                .overflowing_add(increment_timer);
+            let (timer_counter, did_overflow) = self.timer_counter
+                .overflowing_add(increment_timer as u8);
             self.timer_counter = timer_counter;
             // When the value exceeds 0xFF, it is reet to the value specified in
             // TMA (0xFF06) and an interrupt is requested.
@@ -292,8 +281,7 @@ impl IO<'_> {
                 self.send_timer_interrupt();
             }
         }
-
-        self.cpu_cycle.wrapping_add(n_ticks);
+        self.cpu_cycle = self.cpu_cycle.wrapping_add(n_ticks as u16);
     }
 
     pub fn receive_stop(&mut self) {
