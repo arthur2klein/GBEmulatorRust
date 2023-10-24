@@ -1,3 +1,5 @@
+use crate::screen::Screen;
+
 struct Tile_object {
     y_position: u8,
     x_position: u8,
@@ -385,18 +387,16 @@ impl GPU {
     /// One frame lasts 16.74 ms
     fn draw_lines(&mut self) {
         self.lcd_y_coordinate = 0;
-        loop {
+        while self.lcd_y_coordinate < 154 {
             //let time = SystemTime::now();
             if self.lcd_y_coordinate == self.lcd_y_compare {
                 self.lyc_equal_ly();
             }
             self.draw_line();
             self.lcd_y_coordinate += 1;
-            if self.lcd_y_coordinate >= 154 {
-                self.lcd_y_coordinate = 0;
-            }
             //sleep(Duration::from_micros(16740) - time.elapsed.unwrap());
         }
+        screen.update();
     }
 
     /// Draws a line on the screen

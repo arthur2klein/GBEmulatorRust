@@ -1,3 +1,5 @@
+use std::fs::File;
+
 pub struct Cartridge {
     rom: Vec<u8>,
     ram: Vec<u8>

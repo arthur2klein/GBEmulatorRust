@@ -1,7 +1,6 @@
-mod graphic;
-use crate::graphic::toto::display;
+use crate::cpu::CPU;
 
 fn main() {
-    println!("Hello, world!");
-    display();
+    let cpu = CPU::new("../Pokemon Red.gb");
+    cpu.run();
 }

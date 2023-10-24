@@ -1,3 +1,5 @@
+use crate::gpu::GPU;
+
 // The SsBA buttons are select button and are read from bits 3 to 0 when bit 5
 // is 0.
 // The movement buttons read from bits 3 to 0 when bit 4 is 0.
@@ -52,9 +54,22 @@ pub struct IO {
 }
 
 impl IO {
-    pub fn new() -> Self {
+    pub fn new(gpu: &GPU) -> Self {
         Self {
-            // TODO
+            joypad_input: 0x00,
+            joypad_input_ssba: 0x00,
+            joypad_input_movement: 0x00,
+            joypad_pending_interruption: false
+            serial_transfer: 0x0000,
+            divider: 0x00,
+            cpu_cycle: 0x0000,
+            timer_counter: 0x00,
+            timer_modulo: 0x00,
+            timer_control: 0x00,
+            gpu,
+            disable_boot_rom: 0x00,
+            pub pending_joypad_interruption: false,
+            pub pending_timer_interruption: false,
         }
     }
     

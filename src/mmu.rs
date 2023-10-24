@@ -1,3 +1,9 @@
+use crate::cartridge::Cartridge;
+use crate::gpu::GPU;
+use crate::wram::WRAM;
+use crate::hram::HRAM;
+use crate::io::IO;
+
 pub struct MMU {
     /* Interrupt flag: unused/unused/unused/joypad/serial/timer/lcd/vblank */
     interrupt_flag: u8,
@@ -22,14 +28,15 @@ pub struct MMU {
 
 impl MMU {
     pub new(cartridge_path: &str) -> Self {
+        let gpu = GPU::new();
         Self {
             interrupt_flag: 0x00,
             ie: 0x00,
             cartridge: Cartridge::new(cartridge_path),
-            gpu: , //TODO
-            wram: , //TODO
-            hram: , //TODO
-            io: , //TODO
+            gpu,
+            wram: WRAM::new(),
+            hram: HRAM::new(),
+            io: IO::new(gpu),
             is_double_speed: false
         }
     }

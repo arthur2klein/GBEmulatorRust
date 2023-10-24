@@ -1,5 +1,6 @@
 use std::time::{Duration, SystemTime};
 use std::thread::sleep;
+use crate::mmu::MMU;
 
 /// This macro creates accessors for the 16 bit register obtained by combining
 /// the two given 8 bits register
@@ -22,7 +23,7 @@ macro_rules! form_16_bits_register {
         /// ```
         fn get_$register1$register2(&self) -> u16 {
             (self.$register1 as u16) << 8
-                | self.$register2 as u16
+               | self.$register2 as u16
         }
 
         /// Sets the value of the 16 bit register $register1$register2
@@ -46,32 +47,6 @@ macro_rules! form_16_bits_register {
         }
     }
 }
-
-/* ---------------------------------------------------------------------------*/
-
-//Definition des structs
-
-/// The CPU of the gameboy
-pub struct CPU {
-    /// The registers used by the CPU to store values
-    registers: Register,
-    /// The memory management unit allows the CPU to communicate with the
-    /// memory
-    mmu: MMU,
-    /// Stops the CPU until an interruption is pending
-    is_halted: bool,
-    /// Enable interruptions
-    /// If 1, enable interruptions ; if 2, enable interruptions after next
-    /// instruction
-    ei: u32,
-    /// Disable interrputions
-    /// If 1, disable interruptions ; if 2, disable interruptons after next
-    /// instruction
-    di: u32,
-    /// Should pending interrpution be managed?
-    emi: bool,
-}
-
 
 /// The registers used by the CPU to store values
 struct Registers {
@@ -97,12 +72,7 @@ struct Registers {
     sp: u16,
 }
 
-/* ---------------------------------------------------------------------------*/
-
-//Implementation des registres
-
 impl Registers {
-
     /// Create the registers with their initial values
     ///
     /// # Returns
@@ -503,12 +473,28 @@ impl Registers {
     }
 }
 
-/* ---------------------------------------------------------------------------*/
-
-//On execute les instructions en implemetant CPU
+/// The CPU of the gameboy
+pub struct CPU {
+    /// The registers used by the CPU to store values
+    registers: Register,
+    /// The memory management unit allows the CPU to communicate with the
+    /// memory
+    mmu: MMU,
+    /// Stops the CPU until an interruption is pending
+    is_halted: bool,
+    /// Enable interruptions
+    /// If 1, enable interruptions ; if 2, enable interruptions after next
+    /// instruction
+    ei: u32,
+    /// Disable interrputions
+    /// If 1, disable interruptions ; if 2, disable interruptons after next
+    /// instruction
+    di: u32,
+    /// Should pending interrpution be managed?
+    emi: bool,
+}
 
 impl CPU {
-
     /// Create the CPU of the gameboy
     ///
     /// # Returns
