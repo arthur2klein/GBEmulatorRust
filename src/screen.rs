@@ -4,7 +4,7 @@ use minifb::{Key, Window, WindowOptions};
 
 const WIDTH: u8 = 160; // Game Boy screen width
 const HEIGHT: u8 = 144; // Game Boy screen height
-const PIXEL_SIZE: usize = 3;
+const PIXEL_SIZE: usize = 5;
 
 pub struct KeyState {
     /// Is the start key pressed

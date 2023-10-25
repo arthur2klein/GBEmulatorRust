@@ -1,21 +1,5 @@
 use crate::screen::KeyState;
 
-// The SsBA buttons are select button and are read from bits 3 to 0 when bit 5
-// is 0.
-// The movement buttons read from bits 3 to 0 when bit 4 is 0.
-pub enum JoypadButton {
-    // SsBA buttons
-    START,
-    SELECT,
-    B,
-    A,
-    // Movement buttons
-    DOWN,
-    UP,
-    LEFT,
-    RIGHT,
-}
-
 pub struct IO {
     // Joypad
     joypad_input: u8,
@@ -32,7 +16,8 @@ pub struct IO {
     // Interruptions
     pub pending_joypad_interruption: bool,
     pub pending_timer_interruption: bool,
-    other: Vec<u8>
+    other: Vec<u8>,
+    is_stopped: bool,
 }
 
 impl IO {
@@ -49,6 +34,7 @@ impl IO {
             pending_joypad_interruption: false,
             pending_timer_interruption: false,
             other: vec![0x00; 256],
+            is_stopped: false,
         }
     }
     
@@ -208,14 +194,16 @@ impl IO {
         keys: &KeyState
     ) {
         self.listen_for_buttons(keys);
-        // The clock frequency of the CPU is 4194304 Hz
-        // The divider increment frequency is  16384 Hz (every 256 cycle)
-        let increment_divider = ((
-            ((self.cpu_cycle & 0x00FF).wrapping_add(
-                (n_ticks & 0xFFFF) as u16
-            )) & 0xFF00
-        ) >> 8) as u8;
-        self.divider = self.divider.wrapping_add(increment_divider);
+        if !self.is_stopped {
+            // The clock frequency of the CPU is 4194304 Hz
+            // The divider increment frequency is  16384 Hz (every 256 cycle)
+            let increment_divider = ((
+                ((self.cpu_cycle & 0x00FF).wrapping_add(
+                    (n_ticks & 0xFFFF) as u16
+                )) & 0xFF00
+            ) >> 8) as u8;
+            self.divider = self.divider.wrapping_add(increment_divider);
+        }
         // The timer is incremented at the clock frequency specified by the TAC
         // register (0xFF07)
         if self.timer_control & 0x20 == 0x20 {
@@ -265,6 +253,7 @@ impl IO {
 
     pub fn receive_stop(&mut self) {
         self.divider = 0;
+        self.is_stopped = !self.is_stopped;
     }
 
     ///////////////////////////////////////////////////////////////////////////

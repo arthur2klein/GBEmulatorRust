@@ -397,6 +397,7 @@ impl GPU {
         if (self.cpu_cycle & 0x3FFF + n_cycles) >= 0x4000 {
             self.draw_lines();
         }
+        self.screen.update_key_press();
         self.cpu_cycle = self.cpu_cycle.wrapping_add(n_cycles);
     }
 

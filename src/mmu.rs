@@ -279,5 +279,6 @@ impl MMU {
 
     pub fn receive_stop(&mut self) {
         self.is_double_speed = !self.is_double_speed;
+        self.io.receive_stop();
     }
 }
