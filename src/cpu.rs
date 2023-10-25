@@ -533,9 +533,8 @@ impl CPU {
     /// ```
     fn fetchbyte(&mut self) -> u8 {
         let res = self.mmu.read_byte(self.registers.pc);
+        println!("pc = {:#04x}, res = {:#02x}", self.registers.pc, res);
         self.registers.pc = self.registers.pc.wrapping_add(1);
-        sleep(Duration::from_secs(1));
-        println!("pc = {}, res = {}", self.registers.pc, res);
         res
     }
 
@@ -555,6 +554,7 @@ impl CPU {
     /// ```
     fn fetchword(&mut self) -> u16 {
         let res = self.mmu.read_word(self.registers.pc);
+        println!("pc = {:#04x}, res = {:#04x}", self.registers.pc, res);
         self.registers.pc = self.registers.pc.wrapping_add(2);
         res
     }
@@ -701,6 +701,7 @@ impl CPU {
     /// new_cpu.receive_op();
     /// ```
     fn receive_op(&mut self) -> u32 {
+        println!("Execution of the operation at address {}/{}", self.registers.pc, 0x2000);
         assert!(self.registers.pc < 0x2000);
         let op = self.fetchbyte();
         match op {

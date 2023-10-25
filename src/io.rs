@@ -1,3 +1,5 @@
+use crate::screen::KeyState;
+
 // The SsBA buttons are select button and are read from bits 3 to 0 when bit 5
 // is 0.
 // The movement buttons read from bits 3 to 0 when bit 4 is 0.
@@ -17,8 +19,6 @@ pub enum JoypadButton {
 pub struct IO {
     // Joypad
     joypad_input: u8,
-    joypad_input_ssba: u8,
-    joypad_input_movement: u8,
     // Serial transfer (should not be used)
     serial_transfer: u16,
     // Timer and divider
@@ -32,14 +32,13 @@ pub struct IO {
     // Interruptions
     pub pending_joypad_interruption: bool,
     pub pending_timer_interruption: bool,
+    other: Vec<u8>
 }
 
 impl IO {
     pub fn new() -> Self {
         Self {
             joypad_input: 0x00,
-            joypad_input_ssba: 0x00,
-            joypad_input_movement: 0x00,
             serial_transfer: 0x0000,
             divider: 0x00,
             cpu_cycle: 0x0000,
@@ -49,6 +48,7 @@ impl IO {
             disable_boot_rom: 0x00,
             pending_joypad_interruption: false,
             pending_timer_interruption: false,
+            other: vec![0x00; 256],
         }
     }
     
@@ -83,7 +83,7 @@ impl IO {
                 self.disable_boot_rom
             },
             _ => {
-                panic!("Wrong address in io");
+                self.other[(address & 0x00FF) as usize]
             }
         }
     }
@@ -134,101 +134,80 @@ impl IO {
                 self.disable_boot_rom = value;
             },
             _ => {
-                panic!("Wrong address in io");
+                self.other[(address & 0x00FF) as usize] = value;
             }
         }
     }
 
-    pub fn press_button(&mut self, button: JoypadButton) {
+    fn listen_for_buttons(&mut self, keys: &KeyState) {
         // Was a button already being pushed
         let was_pushed = self.joypad_input & 0x0F == 0x0F;
-        match button {
-            JoypadButton::START => {
-                self.joypad_input_ssba &= 0xF7;
-            },
-            JoypadButton::SELECT => {
-                self.joypad_input_ssba &= 0xFB;
-            },
-            JoypadButton::B => {
-                self.joypad_input_ssba &= 0xFD;
-            },
-            JoypadButton::A => {
-                self.joypad_input_ssba &= 0xFE;
-            },
-            JoypadButton::DOWN => {
-                self.joypad_input_movement &= 0xF7;
-            },
-            JoypadButton::UP => {
-                self.joypad_input_movement &= 0xFB;
-            },
-            JoypadButton::LEFT => {
-                self.joypad_input_movement &= 0xFD;
-            },
-            JoypadButton::RIGHT => {
-                self.joypad_input_movement &= 0xFE;
+        let joypad_input_ssba =
+            if keys.is_start_pressed {
+                0x00
+            } else {
+                0x08
+            } |
+            if keys.is_select_pressed {
+                0x00
+            } else {
+                0x04
+            } |
+            if keys.is_b_pressed {
+                0x00
+            } else {
+                0x02
+            } |
+            if keys.is_a_pressed {
+                0x00
+            } else {
+                0x01
             }
-        }
+        ;
+        let joypad_movement =
+            if keys.is_down_pressed {
+                0x00
+            } else {
+                0x08
+            } |
+            if keys.is_up_pressed {
+                0x00
+            } else {
+                0x04
+            } |
+            if keys.is_left_pressed {
+                0x00
+            } else {
+                0x02
+            } |
+            if keys.is_right_pressed {
+                0x00
+            } else {
+                0x01
+            }
+        ;
         self.joypad_input |= 0x0F;
         // If the movements keys are used
         if self.joypad_input & 0x10 == 0x00 {
-            self.joypad_input &= self.joypad_input_movement;
+            self.joypad_input &= joypad_movement;
         }
         // If the SSBA keys are being used
         if self.joypad_input & 0x20 == 0x00 {
-            self.joypad_input &= self.joypad_input_ssba;
+            self.joypad_input &= joypad_input_ssba;
         }
-        if !was_pushed {
+        // Is a button currently being pushed
+        let is_pushed = self.joypad_input & 0x0F == 0x0F;
+        if !was_pushed && is_pushed {
             self.send_joypad_interrupt();
         }
     }
 
-    pub fn release_button(&mut self, button: JoypadButton) {
-        match button {
-            JoypadButton::START => {
-                self.joypad_input_ssba |= 0x08;
-            },
-            JoypadButton::SELECT => {
-                self.joypad_input_ssba |= 0x04;
-            },
-            JoypadButton::B => {
-                self.joypad_input_ssba |= 0x02;
-            },
-            JoypadButton::A => {
-                self.joypad_input_ssba |= 0x01;
-            },
-            JoypadButton::DOWN => {
-                self.joypad_input_movement |= 0x08;
-            },
-            JoypadButton::UP => {
-                self.joypad_input_movement |= 0x04;
-            },
-            JoypadButton::LEFT => {
-                self.joypad_input_movement |= 0x02;
-            },
-            JoypadButton::RIGHT => {
-                self.joypad_input_movement |= 0x01;
-            }
-        }
-        self.joypad_input |= 0x0F;
-        // If the movements keys are used
-        if self.joypad_input & 0x10 == 0x00 {
-            self.joypad_input &= self.joypad_input_movement;
-        }
-        // If the SSBA keys are being used
-        if self.joypad_input & 0x20 == 0x00 {
-            self.joypad_input &= self.joypad_input_ssba;
-        }
-    }
-
-    fn listen_for_buttons(&mut self) {
-        // TODO
-    }
-
     pub fn update(
         &mut self,
-        n_ticks: u32
+        n_ticks: u32,
+        keys: &KeyState
     ) {
-        self.listen_for_buttons();
+        self.listen_for_buttons(keys);
         // The clock frequency of the CPU is 4194304 Hz
         // The divider increment frequency is  16384 Hz (every 256 cycle)
         let increment_divider = ((

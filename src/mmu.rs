@@ -227,8 +227,8 @@ impl MMU {
         &self,
         address: u16
     ) -> u16 {
-        ((self.read_byte(address) as u16) << 8) |
-            (self.read_byte(address + 1) as u16)
+        ((self.read_byte(address + 1) as u16) << 8) |
+            (self.read_byte(address) as u16)
     }
 
     pub fn write_word(
@@ -237,7 +237,7 @@ impl MMU {
         value: u16
     ) {
         self.write_byte(
-            address,
+            address + 1,
             ((value & 0xFF00) >> 8) as u8
         );
         self.write_byte(
@@ -250,7 +250,10 @@ impl MMU {
         &mut self,
         n_cycles: u32,
     ) {
-        self.io.update(n_cycles);
+        self.io.update(
+            n_cycles,
+            self.gpu.transmit_key()
+        );
         self.gpu.update(n_cycles as u16);
         // INT 0x60
         if self.io.pending_joypad_interruption {

@@ -1,4 +1,5 @@
 use crate::screen::Screen;
+use crate::screen::KeyState;
 
 #[derive(Clone)]
 struct TileObject {
@@ -81,6 +82,16 @@ impl GPU {
             screen: Screen::new(),
             cpu_cycle: 0,
         }
+    }
+
+    /// Transmit the Key State
+    ///
+    /// Returns informations about what key is down
+    ///
+    /// # Returns
+    /// **KeyState**: Are key pressed for the screen?
+    pub fn transmit_key(&self) -> &KeyState {
+        &self.screen.key_state
     }
 
     /// Read a value in the given address of the LCD memory are
