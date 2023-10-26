@@ -393,12 +393,19 @@ impl GPU {
         }
     }
 
-    pub fn update(&mut self, n_cycles: u16) {
+    /// Updates the screen and search for key presses
+    ///
+    /// # Arguments
+    /// **n_cycles (u16)**: Number of cpu cycles since last update
+    ///
+    /// # Returns
+    /// **bool**: true iff the Escape key was pressed
+    pub fn update(&mut self, n_cycles: u16) -> bool {
         if (self.cpu_cycle & 0x3FFF + n_cycles) >= 0x4000 {
             self.draw_lines();
         }
-        self.screen.update_key_press();
         self.cpu_cycle = self.cpu_cycle.wrapping_add(n_cycles);
+        self.screen.update_key_press()
     }
 
     /// Draws one frame
@@ -634,7 +641,10 @@ impl GPU {
         let mut res: Vec<u32> = vec![];
         let obj_size = self.obj_size();
         for i in 0..40 {
-            let y_position = self.object_attribute[i].y_position - 16;
+            let y_position = self
+                .object_attribute[i]
+                .y_position
+                .wrapping_sub(16);
             if y_position <= y && y_position + obj_size > y {
                 res.push(i as u32);
                 if res.len() == 10 {

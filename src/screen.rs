@@ -6,6 +6,7 @@ const WIDTH: u8 = 160; // Game Boy screen width
 const HEIGHT: u8 = 144; // Game Boy screen height
 const PIXEL_SIZE: usize = 5;
 
+#[derive(Debug)]
 pub struct KeyState {
     /// Is the start key pressed
     pub is_start_pressed: bool,
@@ -58,6 +59,7 @@ impl KeyState {
         self.is_down_pressed = down;
         self.is_right_pressed = right;
         self.is_left_pressed = left;
+        println!("{:?}", &self);
     }
 }
 
@@ -72,8 +74,11 @@ pub struct Screen {
 
 impl Screen {
     pub fn new() -> Screen {
-        Screen {
-            buffer: vec![0xFFFFFF; PIXEL_SIZE * WIDTH as usize * HEIGHT as usize],
+        let mut res = Screen {
+            buffer: vec![
+                0;
+                PIXEL_SIZE * WIDTH as usize * PIXEL_SIZE * HEIGHT as usize
+            ],
             window: Window::new(
                 "Game Boy Graphics",
                 PIXEL_SIZE * WIDTH as usize,
@@ -85,10 +90,17 @@ impl Screen {
                 }
             ),
             key_state: KeyState::new(),
-        }
+        };
+        res.update();
+        res
     }
 
-    pub fn update_key_press(&mut self) {
+    pub fn update_key_press(&mut self) -> bool {
+        if !self.window.is_active() {
+            println!("WINDOW IS NOT ACTIVE");
+        }
+        let keys = self.window.get_keys();
+        println!("{:?}", keys);
         self.key_state.update(
             self.window.is_key_down(Key::Space),
             self.window.is_key_down(Key::S),
@@ -99,6 +111,7 @@ impl Screen {
             self.window.is_key_down(Key::Right),
             self.window.is_key_down(Key::Left),
         );
+        self.window.is_key_down(Key::Escape)
     }
 
     pub fn receive_pixel(

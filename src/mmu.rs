@@ -249,12 +249,12 @@ impl MMU {
     pub fn update(
         &mut self,
         n_cycles: u32,
-    ) {
+    ) -> bool {
         self.io.update(
             n_cycles,
             self.gpu.transmit_key()
         );
-        self.gpu.update(n_cycles as u16);
+        let res = self.gpu.update(n_cycles as u16);
         // INT 0x60
         if self.io.pending_joypad_interruption {
             self.interrupt_flag |= 0x10;
@@ -275,6 +275,7 @@ impl MMU {
             self.interrupt_flag |= 0x01;
             self.gpu.pending_stat_interrupt  = false;
         }
+        res
     }
 
     pub fn receive_stop(&mut self) {

@@ -493,6 +493,8 @@ pub struct CPU {
     di: u32,
     /// Should pending interrpution be managed?
     ime: bool,
+    /// Has the user asked for the program to stop
+    should_stop: bool,
 }
 
 impl CPU {
@@ -514,6 +516,7 @@ impl CPU {
             ei: 0,
             di: 0,
             ime: true,
+            should_stop: false,
         }
     }
 
@@ -676,7 +679,7 @@ impl CPU {
     /// new_cpu.run();
     /// ```
     pub fn run(&mut self) {
-        loop {
+        while !self.should_stop {
             let time = SystemTime::now();
             let time_used = self.execute_step();
             // One cycle lasts 2385ns
@@ -4108,15 +4111,15 @@ impl CPU {
         self.update_ime();
         let time_interruption = self.manage_interruptions();
         if time_interruption != 0 {
-            self.mmu.update(time_interruption);
+            self.should_stop = self.mmu.update(time_interruption);
             return time_interruption;
         }
         if self.is_halted {
-            self.mmu.update(4);
+            self.should_stop = self.mmu.update(4);
             return 4;
         }
         let res = self.receive_op();
-        self.mmu.update(res);
+        self.should_stop = self.mmu.update(res);
         res
     }
 
