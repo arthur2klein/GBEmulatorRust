@@ -4,29 +4,38 @@ use crate::wram::WRAM;
 use crate::hram::HRAM;
 use crate::io::IO;
 
+/// Memory management unit of the GameBoy
 pub struct MMU {
-    /* Interrupt flag: unused/unused/unused/joypad/serial/timer/lcd/vblank */
+    /// Interrupt flag: unused/unused/unused/joypad/serial/timer/lcd/vblank
     pub interrupt_flag: u8,
-    /* Register that controls the interrupts that are considered
-     to be enabled and should be triggered. */
+    /// Register that controls the interrupts that are considered to be
+    /// enabled and should be triggered
     pub ie: u8,
-    /* The cartridge that is currently loaded into the system,
-    going to be used to access ROM and external RAM banks.*/
+    /// The cartridge that is currently loaded into the system, going to be
+    /// used to access ROM and external RAM banks.
     cartridge: Cartridge,
-    /* Reference to the GPU that is going to be used both for VRAM
-    reading/writing and to forward some of the access operations. */
+    /// Reference to the GPU that is going to be used both for VRAM
+    /// reading/writing and to forward some of the access operations.
     gpu: GPU,
-    /* Working RAM of the system */
+    /// Working RAM of the system
     wram: WRAM,
-    /* High RAM of the system */
+    /// High RAM of the system
     hram: HRAM,
-    /* I/0 Registers */
+    /// I/0 Registers
     io: IO,
-    /* Is the gameboy in double speed mode */
+    /// Is the gameboy in double speed mode
     is_double_speed: bool
 }
 
 impl MMU {
+    /// Create a new Memory management unit
+    ///
+    /// # Arguments
+    /// **cartridge_path (&str)**: Path of the file containing the ROM of the
+    /// game
+    ///
+    /// # Returns
+    /// **MMU**: New Memory Management Unit
     pub fn new(cartridge_path: &str) -> Self {
         Self {
             interrupt_flag: 0x00,
@@ -40,6 +49,13 @@ impl MMU {
         }
     }
 
+    /// Read a byte in the memory of the GameBoy
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address of the byte to read
+    ///
+    /// # Returns
+    /// **u8**: Value read at this address
     pub fn read_byte(
         &self,
         address: u16
@@ -116,6 +132,11 @@ impl MMU {
         }
     }
 
+    /// Change a byte in the memory of the GameBoy
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address of the byte to modifiy
+    /// **value (u8)**: New value to put at this address
     pub fn write_byte(
         &mut self,
         address: u16,
@@ -223,6 +244,13 @@ impl MMU {
         }
     }
 
+    /// Read a word in the memory of the GameBoy
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address of the word to read
+    ///
+    /// # Returns
+    /// **u16**: Value read at this address
     pub fn read_word(
         &self,
         address: u16
@@ -231,6 +259,11 @@ impl MMU {
             (self.read_byte(address) as u16)
     }
 
+    /// Change a word in the memory of the GameBoy
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address of the word to modifiy
+    /// **value (u16)**: New value to put at this address
     pub fn write_word(
         &mut self,
         address: u16,
@@ -246,6 +279,13 @@ impl MMU {
         );
     }
 
+    /// Updates the memory
+    ///
+    /// # Arguments
+    /// **n_cycyles (u32)**: Number of cpu cycles since the last update
+    ///
+    /// # Returns
+    /// **bool**: True iff the escape key is pressed
     pub fn update(
         &mut self,
         n_cycles: u32,
@@ -278,6 +318,10 @@ impl MMU {
         res
     }
 
+    /// React to a stop from the cpu
+    ///
+    /// Change the cpu cycle and transmit the stop to the memory zone that use
+    /// it
     pub fn receive_stop(&mut self) {
         self.is_double_speed = !self.is_double_speed;
         self.io.receive_stop();

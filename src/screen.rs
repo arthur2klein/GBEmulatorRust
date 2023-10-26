@@ -1,12 +1,15 @@
 extern crate minifb;
 
 use minifb::{Key, Window, WindowOptions};
-
-const WIDTH: u8 = 160; // Game Boy screen width
-const HEIGHT: u8 = 144; // Game Boy screen height
+/// Game Boy screen width
+const WIDTH: u8 = 160; 
+/// Game Boy screen height
+const HEIGHT: u8 = 144;
+/// Scale of the window of the emulator
 const PIXEL_SIZE: usize = 5;
 
 #[derive(Debug)]
+/// Contains information about what key is being pushed
 pub struct KeyState {
     /// Is the start key pressed
     pub is_start_pressed: bool,
@@ -27,6 +30,10 @@ pub struct KeyState {
 }
 
 impl KeyState {
+    /// Initialize a new KeyState
+    ///
+    /// # Returns
+    /// **KeyState**: KeyState with all attributes set to false
     fn new() -> Self {
         Self {
             is_start_pressed: false,
@@ -40,6 +47,17 @@ impl KeyState {
         }
     }
 
+    /// Update the KeyState
+    ///
+    /// # Arguments
+    /// **start (bool)**: Is the start button being pushed?
+    /// **select (bool)**: Is the start button being pushed?
+    /// **a (bool)**: Is the A button being pushed?
+    /// **b (bool)**: Is the B button being pushed?
+    /// **up (bool)**: Is the up button being pushed?
+    /// **down (bool)**: Is the down button being pushed?
+    /// **left (bool)**: Is the left button being pushed?
+    /// **right (bool)**: Is the right button being pushed?
     fn update(
         &mut self,
         start: bool,
@@ -63,6 +81,7 @@ impl KeyState {
     }
 }
 
+/// Creates a window for the emulator
 pub struct Screen {
     /// Buffer for the screen
     buffer: Vec<u32>,
@@ -73,6 +92,10 @@ pub struct Screen {
 }
 
 impl Screen {
+    /// Create a new window
+    ///
+    /// # Returns
+    /// **Screen**: Screen that can be used by the emulator
     pub fn new() -> Screen {
         let mut res = Screen {
             buffer: vec![
@@ -95,6 +118,10 @@ impl Screen {
         res
     }
 
+    /// Verify what button is being pushed
+    ///
+    /// # Returns
+    /// **bool**: Is the escape key being pressed
     pub fn update_key_press(&mut self) -> bool {
         if !self.window.is_active() {
             println!("WINDOW IS NOT ACTIVE");
@@ -114,6 +141,12 @@ impl Screen {
         self.window.is_key_down(Key::Escape)
     }
 
+    /// Change the color of a pixel of the GameBoy
+    ///
+    /// # Arguments
+    /// **x (u8)**: x coordinate of the object
+    /// **y (u8)**: y coordinate of the object
+    /// **c (u8)**: Color of the pixel (00 to 11 for white to black)
     pub fn receive_pixel(
         &mut self,
         x: u8,
@@ -143,6 +176,7 @@ impl Screen {
         }
     }
 
+    /// Refresh the screen
     pub fn update(&mut self) {
         self.window
             .update_with_buffer_size(

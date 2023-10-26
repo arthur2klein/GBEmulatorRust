@@ -1,26 +1,42 @@
 use crate::screen::KeyState;
 
+/// Contains the memory of the gameboy used to store time and user input
 pub struct IO {
-    // Joypad
+    /// State of the buttons of the joypad
+    /// unused/unused/are ssba buttons disabled/are movement buttons disabled/
+    /// start and down/select and up/b and left/a and right
     joypad_input: u8,
-    // Serial transfer (should not be used)
+    /// Serial transfer (should not be used)
     serial_transfer: u16,
-    // Timer and divider
+    /// Divider
+    /// Mesure the time
     divider: u8,
+    /// Number of cpu cycle elapsed to determin the timers
     cpu_cycle: u16,
+    /// Timer counting the time
     timer_counter: u8,
+    /// Value at which the timer will be reset after overflow
     timer_modulo: u8,
+    /// Controls the timer speed
+    /// unused*5/enabled/clock select*2
     timer_control: u8,
-    // Set to non zero to diasable boot ROM
+    /// Set to non zero to diasable boot ROM
     disable_boot_rom: u8,
-    // Interruptions
+    /// Is a joypad interruption waiting to be handled by the CPU?
     pub pending_joypad_interruption: bool,
+    /// Is a timer interruption waiting to be handled by the CPU?
     pub pending_timer_interruption: bool,
+    /// Other information of IO not used in this project (eg audio)
     other: Vec<u8>,
+    /// Is the divider disabled
     is_stopped: bool,
 }
 
 impl IO {
+    /// Initialize the IO with data set to 0
+    ///
+    /// # Returns
+    /// **IO**: New data with all attributes set to zero
     pub fn new() -> Self {
         Self {
             joypad_input: 0x00,
@@ -38,6 +54,13 @@ impl IO {
         }
     }
     
+    /// Read a byte of the IO memory
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address of the byte to read
+    ///
+    /// # Returns
+    /// **u8**: Value read at the given address of the IO memory
     pub fn read(&self, address: u16) -> u8 {
         match (address & 0x00FF) as u8 {
             // Joypad
@@ -74,6 +97,11 @@ impl IO {
         }
     }
 
+    /// Change a byte in the IO memory
+    ///
+    /// # Arguments
+    /// **address (u16)**: Address of the byte to change
+    /// **value (u8)**: New value at the given address of the IO memory
     pub fn write(
         &mut self,
         address: u16,
@@ -125,6 +153,11 @@ impl IO {
         }
     }
 
+    /// Update the joypad byte with the given informations
+    ///
+    /// # Arguments
+    /// **keys (&KeyState)**: Contains information about what key is being
+    /// pushed
     fn listen_for_buttons(&mut self, keys: &KeyState) {
         // Was a button already being pushed
         let was_pushed = self.joypad_input & 0x0F == 0x0F;
@@ -188,6 +221,12 @@ impl IO {
         }
     }
 
+    /// Updates the IO memory
+    /// 
+    /// # Arguments
+    /// **n_ticks (u32)**: Number of cpu cycles since the last update
+    /// **keys (&KeyState)**: Contains information about what key is being
+    /// pushed
     pub fn update(
         &mut self,
         n_ticks: u32,
@@ -251,19 +290,21 @@ impl IO {
         self.cpu_cycle = self.cpu_cycle.wrapping_add(n_ticks as u16);
     }
 
+    /// Reacts to a stop instruction
+    ///
+    /// Re-initialize and stop the divider
     pub fn receive_stop(&mut self) {
         self.divider = 0;
         self.is_stopped = !self.is_stopped;
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Interruptions
-    ///////////////////////////////////////////////////////////////////////////
+    /// Signify that a joypad interruption is waiting to be handled by the cpu
     fn send_joypad_interrupt(&mut self) {
         // INT 0x60
         self.pending_joypad_interruption = true;
     }
 
+    /// Signify that a timer interruption is waiting to be handled by the cpu
     fn send_timer_interrupt(&mut self) {
         // INT 0x50
         self.pending_timer_interruption = true;

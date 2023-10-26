@@ -2,8 +2,13 @@ use std::fs;
 use std::io;
 use gb_emulator_rust::cpu::CPU;
 
+/// Name of the foler where the cartridge will be searched
 const CARTRIDGES_FOLDER_NAME: &str = "cartridges";
 
+/// Allow the user to chose one of the file of the cartridge folder
+///
+/// # Returns
+/// **String**: Name of the chosen file
 fn chose_cartridge() -> String {
     for (i, path) in fs::read_dir(CARTRIDGES_FOLDER_NAME)
         .unwrap()
@@ -34,6 +39,7 @@ fn chose_cartridge() -> String {
     )
 }
 
+/// Emulate a GameBoy DMG
 fn main() {
     let cartridge_name = chose_cartridge();
     let mut cpu = CPU::new(&cartridge_name);
