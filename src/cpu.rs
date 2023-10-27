@@ -7,44 +7,81 @@ use crate::mmu::MMU;
 #[allow(unused_macros)]
 macro_rules! form_16_bits_register {
     ($register1: ident, $register2: ident) => {
-        /// Returns the value of the 16 bit register $register1$register2
-        ///
-        /// The value of $register1$register2 is obtained by reading the bits
-        /// of $register1 and then those of $register2
-        ///
-        /// # Returns
-        /// **u16**: Value of the 16 bit register.
-        ///
-        /// # Examples
-        /// ``` rust
-        /// let mut new_registers = Registers::new();
-        /// new_registers.$register1 = 0x12;
-        /// new_registers.$register2 = 0x34;
-        /// assert_eq!(new_registers.get_$register1$register2(), 0x1234);
-        /// ```
-        fn get_$register1$register2(&self) -> u16 {
-            (self.$register1 as u16) << 8
-               | self.$register2 as u16
-        }
+        paste::item! {
+            #[doc = concat!(
+                "Returns the value of the 16 bit register ",
+                stringify!($register1),
+                stringify!($register2),
+                " obtained by reading the bits of ",
+                stringify!($register1),
+                " and then those of ",
+                stringify!($register2)
+            )]
+            /// # Returns
+            /// **u16**: Value of the 16 bit register.
+            ///
+            /// # Examples
+            /// ``` rust
+            /// let mut new_registers = Registers::new();
+            #[doc = concat!(
+                "new_registers.",
+                stringify!($register1),
+                "= 0x12;"
+            )]
+            #[doc = concat!(
+                "new_registers.",
+                stringify!($register2),
+                "= 0x34;"
+            )]
+            #[doc = concat!(
+                "assert_eq!(",
+                "new_registers.get_",
+                stringify!($register1),
+                stringify!($register2),
+                "(), 0x1234);"
+            )]
+            /// ```
+            fn [< get_ $register1 $register2 >](&self) -> u16 {
+                (self.$register1 as u16) << 8
+                   | self.$register2 as u16
+            }
 
-        /// Sets the value of the 16 bit register $register1$register2
-        ///
-        /// The value of $register1$register2 is obtained by reading the bits
-        /// of $register1 and then those of $register2
-        ///
-        /// # Arguments
-        /// **value (u16)**: New value of the 16 bit register.
-        ///
-        /// # Examples
-        /// ``` rust
-        /// let mut new_registers = Registers::new();
-        /// new_registers.set_$register1$regiser2(0x1234);
-        /// assert_eq!(new_registers.$register1, 0x12);
-        /// assert_eq!(new_registers.$register2, 0x34);
-        /// ```
-        fn set_$register1$register2(&mut self, value: u16) {
-            self.$register1 = ((value & 0xFF00) >> 8) as u8;
-            self.$register2 = (value & 0xFF) as u8;
+            #[doc = concat!(
+                "Modify the value of the 16 bit register ",
+                stringify!($register1),
+                stringify!($register2),
+                " obtained by reading the bits of ",
+                stringify!($register1),
+                " and then those of ",
+                stringify!($register2)
+            )]
+            /// # Arguments
+            /// **value (u16)**: New value of the 16 bit register.
+            ///
+            /// # Examples
+            /// ``` rust
+            /// let mut new_registers = Registers::new();
+            #[doc = concat!(
+                "new_registers.set_",
+                stringify!($register1),
+                stringify!($register2),
+                "(0x1234);"
+            )]
+            #[doc = concat!(
+                "assert_eq!(new_registers.",
+                stringify!($register1),
+                ", 0x12);"
+            )]
+            #[doc = concat!(
+                "assert_eq!(new_registers.",
+                stringify!($register2),
+                ", 0x34);"
+            )]
+            /// ```
+            fn [< set_ $register1 $register2 >](&mut self, value: u16) {
+                self.$register1 = ((value & 0xFF00) >> 8) as u8;
+                self.$register2 = (value & 0xFF) as u8;
+            }
         }
     }
 }
@@ -99,165 +136,10 @@ impl Registers {
         }
     }
 
-    /// Returns the value of the 16 bit register BC
-    ///
-    /// The value of BC is obtained by reading the bits of B and then those of
-    /// C
-    ///
-    /// # Returns
-    /// **u16**: Value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.b = 0x12;
-    /// new_registers.c = 0x34;
-    /// assert_eq!(new_registers.get_bc(), 0x1234);
-    /// ```
-    fn get_bc(&self) -> u16 {
-        (self.b as u16) << 8
-            | self.c as u16
-    }
-
-    /// Sets the value of the 16 bit register BC
-    ///
-    /// The value of BC is obtained by reading the bits of B and then those of
-    /// C
-    ///
-    /// # Arguments
-    /// **value (u16)**: New value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.set_bc(0x1234);
-    /// assert_eq!(new_registers.b, 0x12);
-    /// assert_eq!(new_registers.c, 0x34);
-    /// ```
-    fn set_bc(&mut self, value: u16) {
-        self.b = ((value & 0xFF00) >> 8) as u8;
-        self.c = (value & 0xFF) as u8;
-    }
-
-    /// Returns the value of the 16 bit register AF
-    ///
-    /// The value of AF is obtained by reading the bits of A and then those of
-    /// F
-    ///
-    /// # Returns
-    /// **u16**: Value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.a = 0x12;
-    /// new_registers.f = 0x34;
-    /// assert_eq!(new_registers.get_af(), 0x1234);
-    /// ```
-    fn get_af(&self) -> u16 {
-        (self.a as u16) << 8
-            | self.f as u16
-    }
-
-    /// Sets the value of the 16 bit register AF
-    ///
-    /// The value of AF is obtained by reading the bits of A and then those of
-    /// F
-    ///
-    /// # Arguments
-    /// **value (u16)**: New value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.set_af(0x1234);
-    /// assert_eq!(new_registers.a, 0x12);
-    /// assert_eq!(new_registers.f, 0x34);
-    /// ```
-    fn set_af(&mut self, value: u16) {
-        self.a = ((value & 0xFF00) >> 8) as u8;
-        self.f = (value & 0xFF) as u8;
-    }
-
-    /// Returns the value of the 16 bit register DE
-    ///
-    /// The value of DE is obtained by reading the bits of D and then those of
-    /// E
-    ///
-    /// # Returns
-    /// **u16**: Value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.d = 0x12;
-    /// new_registers.e = 0x34;
-    /// assert_eq!(new_registers.get_de(), 0x1234);
-    /// ```
-    fn get_de(&self) -> u16 {
-        (self.d as u16) << 8
-            | self.e as u16
-    }
-
-    /// Sets the value of the 16 bit register BC
-    ///
-    /// The value of DE is obtained by reading the bits of D and then those of
-    /// E
-    ///
-    /// # Arguments
-    /// **value (u16)**: New value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.set_de(0x1234);
-    /// assert_eq!(new_registers.d, 0x12);
-    /// assert_eq!(new_registers.e, 0x34);
-    /// ```
-    fn set_de(&mut self, value: u16) {
-        self.d = ((value & 0xFF00) >> 8) as u8;
-        self.e = (value & 0xFF) as u8;
-    }
-
-    /// Returns the value of the 16 bit register HL
-    ///
-    /// The value of HL is obtained by reading the bits of H and then those of
-    /// L
-    ///
-    /// # Returns
-    /// **u16**: Value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.h = 0x12;
-    /// new_registers.l = 0x34;
-    /// assert_eq!(new_registers.get_hl(), 0x1234);
-    /// ```
-    fn get_hl(&self) -> u16 {
-        (self.h as u16) << 8
-            | self.l as u16
-    }
-
-    /// Sets the value of the 16 bit register HL
-    ///
-    /// The value of HL is obtained by reading the bits of H and then those of
-    /// L
-    ///
-    /// # Arguments
-    /// **value (u16)**: New value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.set_hl(0x1234);
-    /// assert_eq!(new_registers.h, 0x12);
-    /// assert_eq!(new_registers.l, 0x34);
-    /// ```
-    fn set_hl(&mut self, value: u16) {
-        self.h = ((value & 0xFF00) >> 8) as u8;
-        self.l = (value & 0xFF) as u8;
-    }
+    form_16_bits_register!(a, f);
+    form_16_bits_register!(b, c);
+    form_16_bits_register!(d, e);
+    form_16_bits_register!(h, l);
 
     /// Returns the current value of the 16 bit register HL and decrement it
     ///

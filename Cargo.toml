@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 minifb = "0.14"
+paste = "1.0.14"
