@@ -608,7 +608,7 @@ impl GPU {
     /// # Arguments
     /// **x (u8)**: X coordinate of the pixel
     /// **y (u8)**: Y coordinate of the pixel
-    /// **obj_in_line (Vec<u32>)**: Indices of the objects in this line
+    /// **obj_in_line (`&Vec<u32>`)**: Indices of the objects in this line
     ///
     /// # Retuns
     /// **u8**: Color of the given pixel
@@ -689,7 +689,7 @@ impl GPU {
     /// **y (u8)**: Current y coordinate (as found at 0xFF40)
     ///
     /// # Returns
-    /// **Vec<u32>**: Collections of the indices of objects found in the
+    /// **`Vec<u32>`**: Collections of the indices of objects found in the
     /// current line
     fn objects_in_line(&self, y: u8) -> Vec<u32> {
         let mut res: Vec<u32> = vec![];

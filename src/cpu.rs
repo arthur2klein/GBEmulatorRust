@@ -693,7 +693,7 @@ impl CPU {
 
     /// Reads an instruction and execute it from the normal table
     ///
-    /// https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
+    /// <https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html>
     ///
     /// # Returns
     /// **u32**: Number of cycles used for the step
@@ -2334,7 +2334,7 @@ impl CPU {
 
     /// Reads an instruction and execute it from the CB table
     ///
-    /// https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
+    /// <https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html>
     ///
     /// # Returns
     /// **u32**: Number of cycles used for the step
