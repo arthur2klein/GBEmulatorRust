@@ -586,8 +586,8 @@ impl CPU {
     /// new_cpu.receive_op();
     /// ```
     fn receive_op(&mut self) -> u32 {
-        println!("Execution of the operation at address {}/{}", self.registers.pc, 0x2000);
-        assert!(self.registers.pc < 0x2000);
+        println!("Execution of the operation at address {}/{}", self.registers.pc, 0x4000);
+        assert!(self.registers.pc < 0x4000);
         let op = self.fetchbyte();
         match op {
             // NOP
