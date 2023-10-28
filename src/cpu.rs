@@ -2439,9 +2439,9 @@ impl CPU {
                 self.ei = 2;
                 4
             },
-            // CP d8
+            // CP A, d8
             0xFE => {
-                println!("CP d8");
+                println!("CP A, d8");
                 let value = self.fetchbyte();
                 self.cp(value);
                 8

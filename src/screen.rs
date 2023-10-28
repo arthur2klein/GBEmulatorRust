@@ -77,7 +77,6 @@ impl KeyState {
         self.is_down_pressed = down;
         self.is_right_pressed = right;
         self.is_left_pressed = left;
-        println!("{:?}", &self);
     }
 }
 
@@ -99,7 +98,7 @@ impl Screen {
     pub fn new() -> Screen {
         let mut res = Screen {
             buffer: vec![
-                0;
+                0xFFFFFF;
                 PIXEL_SIZE * WIDTH as usize * PIXEL_SIZE * HEIGHT as usize
             ],
             window: Window::new(
@@ -123,11 +122,10 @@ impl Screen {
     /// # Returns
     /// **bool**: Is the escape key being pressed
     pub fn update_key_press(&mut self) -> bool {
+        self.update();
         if !self.window.is_active() {
             println!("WINDOW IS NOT ACTIVE");
         }
-        let keys = self.window.get_keys();
-        println!("{:?}", keys);
         self.key_state.update(
             self.window.is_key_down(Key::Space),
             self.window.is_key_down(Key::S),
