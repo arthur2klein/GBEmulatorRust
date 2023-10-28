@@ -592,16 +592,19 @@ impl CPU {
         match op {
             // NOP
             0x00 => {
+                println!("NOP");
                 4
             },
             // LD BC, d16
             0x01 => {
+                println!("LD BC, d16");
                 let word = self.fetchword();
                 self.registers.set_bc(word);
                 12
             },
             // LD (BC), A
             0x02 => {
+                println!("LD (BC), A");
                 self.mmu.write_byte(
                     self.registers.get_bc(),
                     self.registers.a
@@ -610,6 +613,7 @@ impl CPU {
             },
             // INC BC
             0x03 => {
+                println!("INC BC");
                 self.registers.set_bc(
                     self.registers.get_bc().wrapping_add(1)
                 );
@@ -617,27 +621,32 @@ impl CPU {
             },
             // INC B
             0x04 => {
+                println!("INC B");
                 self.registers.b = self.inc(self.registers.b);
                 4
             },
             // DEC B
             0x05 => {
+                println!("DEC B");
                 self.registers.b = self.dec(self.registers.b);
                 4
             },
             // LD B, d8
             0x06 => {
+                println!("LD B, d8");
                 self.registers.b = self.fetchbyte();
                 8
             },
             // RLCA
             0x07 => {
+                println!("RLCA");
                 self.registers.a = self.rlc(self.registers.a);
                 self.registers.set_zero(false);
                 4
             },
             // LD (a16), SP
             0x08 => {
+                println!("LD (a16), SP");
                 let word = self.fetchword();
                 self.mmu.write_word(
                     word,
@@ -647,53 +656,63 @@ impl CPU {
             },
             // ADD HL, BC
             0x09 => {
+                println!("ADD HL, BC");
                 self.addhl(self.registers.get_bc());
                 8
             },
             // LD A, (BC)
             0x0A => {
+                println!("LD A, (BC)");
                 self.registers.a = self.mmu.read_byte(self.registers.get_bc());
                 8
             },
             // DEC BC
             0x0B => {
+                println!("DEC BC");
                 self.registers.set_bc(self.registers.get_bc().wrapping_sub(1));
                 8
             },
             // INC C
             0x0C => {
+                println!("INC C");
                 self.registers.c = self.inc(self.registers.c);
                 4
             },
             // DEC C
             0x0D => {
+                println!("DEC C");
                 self.registers.c = self.dec(self.registers.c);
                 4
             },
             // LD C, d8
             0x0E => {
+                println!("LD C, d8");
                 self.registers.c = self.fetchbyte();
                 8
             },
             // RRCA
             0x0F => {
+                println!("RRCA");
                 self.registers.a = self.rrc(self.registers.a);
                 self.registers.set_zero(false);
                 4
             },
             // STOP A
             0x10 => {
+                println!("STOP A");
                 self.send_stop();
                 4
             },
             // LD DE, D16
             0x11 => {
+                println!("LD DE, D16");
                 let word = self.fetchword();
                 self.registers.set_de(word);
                 12
             },
             // LD (DE), A
             0x12 => {
+                println!("LD (DE), A");
                 self.mmu.write_byte(
                     self.registers.get_de(),
                     self.registers.a
@@ -702,6 +721,7 @@ impl CPU {
             },
             // INC DE
             0x13 => {
+                println!("INC DE");
                 self.registers.set_de(
                     self.registers.get_de().wrapping_add(1)
                 );
@@ -709,32 +729,38 @@ impl CPU {
             },
             // INC D
             0x14 => {
+                println!("INC D");
                 self.registers.d = self.inc(self.registers.d);
                 4
             },
             // DEC D
             0x15 => {
+                println!("DEC D");
                 self.registers.d = self.dec(self.registers.d);
                 4
             },
             // LD D, d8
             0x16 => {
+                println!("LD D, d8");
                 self.registers.d = self.fetchbyte();
                 8
             },
             // RLA
             0x17 => {
+                println!("RLA");
                 self.registers.a = self.rl(self.registers.a);
                 self.registers.set_zero(false);
                 4
             },
             // JR r8
             0x18 => {
+                println!("JR r8");
                 self.jr();
                 12
             },
             // ADD HL, DE
             0x19 => {
+                println!("ADD HL, DE");
                 self.addhl(
                     self.registers.get_de()
                 );
@@ -742,6 +768,7 @@ impl CPU {
                },
             // LD A, (DE)
             0x1A => {
+                println!("LD A, (DE)");
                 self.registers.a = self.mmu.read_byte(
                     self.registers.get_de()
                 );
@@ -749,6 +776,7 @@ impl CPU {
             },
             // DEC DE
             0x1B => {
+                println!("DEC DE");
                 self.registers.set_de(
                     self.registers.get_de().wrapping_sub(1)
                 );
@@ -756,27 +784,32 @@ impl CPU {
             },
             // INC E
             0x1C => {
+                println!("INC E");
                 self.registers.e = self.inc(self.registers.e);
                 4
             },
             // DEC E
             0x1D => {
+                println!("DEC E");
                 self.registers.e = self.dec(self.registers.e);
                 4
             },
             // LD D, d8
             0x1E => {
+                println!("LD D, d8");
                 self.registers.d = self.fetchbyte();
                 8
             },
             // RRA
             0x1F => {
+                println!("RRA");
                 self.registers.a = self.rr(self.registers.a);
                 self.registers.set_zero(false);
                 4
             },
             // JR NZ, r8
             0x20 => {
+                println!("JR NZ, r8");
                 if !self.registers.get_zero() {
                     self.jr();
                     12
@@ -787,12 +820,14 @@ impl CPU {
             },
             // LD HL, d16
             0x21 => {
+                println!("LD HL, d16");
                 let word = self.fetchword();
                 self.registers.set_hl(word);
                 12
             },
             // LD (HL+), A
             0x22 => {
+                println!("LD (HL+), A");
                 self.mmu.write_byte(
                     self.registers.get_hli(),
                     self.registers.a
@@ -801,6 +836,7 @@ impl CPU {
             },
             // INC HL
             0x23 => {
+                println!("INC HL");
                 self.registers.set_hl(
                     self.registers.get_hl().wrapping_add(1)
                 );
@@ -808,26 +844,31 @@ impl CPU {
             },
             // INC H
             0x24 => {
+                println!("INC H");
                 self.registers.h = self.inc(self.registers.h);
                 4
             },
             // DEC H
             0x25 => {
+                println!("DEC H");
                 self.registers.h = self.dec(self.registers.h);
                 4
             },
             // LD H, d8
             0x26 => {
+                println!("LD H, d8");
                 self.registers.h = self.fetchbyte();
                 8
             },
             // DAA
             0x27 => {
+                println!("DAA");
                 self.daa();
                 4
             },
             // JR Z, r8
             0x28 => {
+                println!("JR Z, r8");
                 if self.registers.get_zero() {
                     self.jr();
                     12
@@ -838,11 +879,13 @@ impl CPU {
             },
             // ADD HL, HL
             0x29 => {
+                println!("ADD HL, HL");
                 self.addhl(self.registers.get_hl());
                 8
             },
             // LD A, (HL+)
             0x2A => {
+                println!("LD A, (HL+)");
                 self.mmu.write_byte(
                     self.registers.get_hli(),
                     self.registers.a
@@ -851,6 +894,7 @@ impl CPU {
             },
             // DEC HL
             0x2B => {
+                println!("DEC HL");
                 self.registers.set_hl(
                     self.registers.get_hl().wrapping_sub(1)
                 );
@@ -858,21 +902,25 @@ impl CPU {
             },
             // INC L
             0x2C => {
+                println!("INC L");
                 self.registers.l = self.inc(self.registers.l);
                 4
             },
             // DEC L
             0x2D => {
+                println!("DEC L");
                 self.registers.l = self.dec(self.registers.l);
                 4
             },
             // LD L, d8
             0x2E => {
+                println!("LD L, d8");
                 self.registers.l = self.fetchbyte();
                 8
             },
             // CPL
             0x2F => {
+                println!("CPL");
                 self.registers.a = self.registers.a;
                 self.registers.set_half(true);
                 self.registers.set_sub(true);
@@ -880,6 +928,7 @@ impl CPU {
             },
             // JR NC, r8
             0x30 => {
+                println!("JR NC, r8");
                 if !self.registers.get_carry() {
                     self.jr();
                     12
@@ -890,11 +939,13 @@ impl CPU {
             },
             // LD SP, d16
             0x31 => {
+                println!("LD SP, d16");
                 self.registers.sp = self.fetchword();
                 12
             },
             // LD (HL-), A
             0x32 => {
+                println!("LD (HL-), A");
                 self.mmu.write_byte(
                     self.registers.get_hld(),
                     self.registers.a
@@ -903,11 +954,13 @@ impl CPU {
             },
             // INC SP
             0x33 => {
+                println!("INC SP");
                 self.registers.sp = self.registers.sp.wrapping_add(1);
                 8
             },
             // INC (HL)
             0x34 => {
+                println!("INC (HL)");
                 let value = self.inc(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -921,6 +974,7 @@ impl CPU {
             },
             // DEC (HL)
             0x35 => {
+                println!("DEC (HL)");
                 let value = self.dec(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -934,6 +988,7 @@ impl CPU {
             },
             // LD (HL), d8
             0x36 => {
+                println!("LD (HL), d8");
                 let word = self.fetchbyte();
                 self.mmu.write_byte(
                     self.registers.get_hl(),
@@ -943,6 +998,7 @@ impl CPU {
             },
             // SCF
             0x37 => {
+                println!("SCF");
                 self.registers.set_carry(true);
                 self.registers.set_half(false);
                 self.registers.set_sub(true);
@@ -950,6 +1006,7 @@ impl CPU {
             },
             // JR C, r8
             0x38 => {
+                println!("JR C, r8");
                 if self.registers.get_carry() {
                     self.jr();
                     12
@@ -960,6 +1017,7 @@ impl CPU {
             },
             // ADD HL, SP
             0x39 => {
+                println!("ADD HL, SP");
                 self.addhl(
                     self.registers.sp
                 );
@@ -967,6 +1025,7 @@ impl CPU {
             },
             // LD A, (HL-)
             0x3A => {
+                println!("LD A, (HL-)");
                 self.registers.a = self.mmu.read_byte(
                     self.registers.get_hld()
                 );
@@ -974,11 +1033,13 @@ impl CPU {
             },
             // DEC SP
             0x3B => {
+                println!("DEC SP");
                 self.registers.sp = self.registers.sp.wrapping_sub(1);
                 8
             },
             // INC A
             0x3C => {
+                println!("INC A");
                 self.registers.a = self.inc(
                     self.registers.a
                 );
@@ -986,6 +1047,7 @@ impl CPU {
             },
             // DEC A
             0x3D => {
+                println!("DEC A");
                 self.registers.a = self.dec(
                     self.registers.a
                 );
@@ -993,11 +1055,13 @@ impl CPU {
             },
             // LD A, d8
             0x3E => {
+                println!("LD A, d8");
                 self.registers.a = self.fetchbyte();
                 8
             },
             // CCF
             0x3F => {
+                println!("CCF");
                 self.registers.set_carry(
                     !self.registers.get_carry()
                 );
@@ -1011,36 +1075,43 @@ impl CPU {
             },
             // LD B, B
             0x40 => {
+                println!("LD B, B");
                 self.registers.b = self.registers.b;
                 4
             },
             // LD B, C
             0x41 => {
+                println!("LD B, C");
                 self.registers.b = self.registers.c;
                 4
             },
             // LD B, D
             0x42 => {
+                println!("LD B, D");
                 self.registers.b = self.registers.d;
                 4
             },
             // LD B, E
             0x43 => {
+                println!("LD B, E");
                 self.registers.b = self.registers.e;
                 4
             },
             // LD B, H
             0x44 => {
+                println!("LD B, H");
                 self.registers.b = self.registers.h;
                 4
             },
             // LD B, L
             0x45 => {
+                println!("LD B, L");
                 self.registers.b = self.registers.l;
                 4
             },
             // LD B, (HL)
             0x46 => {
+                println!("LD B, (HL)");
                 self.registers.b = self.mmu.read_byte(
                     self.registers.get_hl()
                 );
@@ -1048,41 +1119,49 @@ impl CPU {
             },
             // LD B, A
             0x47 => {
+                println!("LD B, A");
                 self.registers.b = self.registers.a;
                 4
             },
             // LD C, B
             0x48 => {
+                println!("LD C, B");
                 self.registers.c = self.registers.b;
                 4
             },
             // LC C, C
             0x49 => {
+                println!("LC C, C");
                 self.registers.c = self.registers.c;
                 4
             },
             // LC C, D
             0x4A => {
+                println!("LC C, D");
                 self.registers.c = self.registers.d;
                 4
             },
             // LD C, E
             0x4B => {
+                println!("LD C, E");
                 self.registers.c = self.registers.e;
                 4
             },
             // LD C, H
             0x4C => {
+                println!("LD C, H");
                 self.registers.c = self.registers.h;
                 4
             },
             // LD C, L
             0x4D => {
+                println!("LD C, L");
                 self.registers.c = self.registers.l;
                 4
             },
             // LD C, (HL)
             0x4E => {
+                println!("LD C, (HL)");
                 self.registers.c = self.mmu.read_byte(
                     self.registers.get_hl()
                 );
@@ -1090,41 +1169,49 @@ impl CPU {
             },
             // LD C, A
             0x4F => {
+                println!("LD C, A");
                 self.registers.c = self.registers.a;
                 4
             },
             // LD D, B
             0x50 => {
+                println!("LD D, B");
                 self.registers.d = self.registers.b;
                 4
             },
             // LD D, C
             0x51 => {
+                println!("LD D, C");
                 self.registers.d = self.registers.c;
                 4
             },
             // LD D, D
             0x52 => {
+                println!("LD D, D");
                 self.registers.d = self.registers.d;
                 4
             },
             // LD D, E
             0x53 => {
+                println!("LD D, E");
                 self.registers.d = self.registers.e;
                 4
             },
             // LD D, H
             0x54 => {
+                println!("LD D, H");
                 self.registers.d = self.registers.h;
                 4
             },
             // LD D, L
             0x55 => {
+                println!("LD D, L");
                 self.registers.d = self.registers.l;
                 4
             },
             // LD D, (HL)
             0x56 => {
+                println!("LD D, (HL)");
                 self.registers.d = self.mmu.read_byte(
                     self.registers.get_hl()
                 );
@@ -1132,41 +1219,49 @@ impl CPU {
             },
             // LD D, A
             0x57 => {
+                println!("LD D, A");
                 self.registers.d = self.registers.a;
                 4
             },
             // LD E, B
             0x58 => {
+                println!("LD E, B");
                 self.registers.e = self.registers.b;
                 4
             },
             // LC E, C
             0x59 => {
+                println!("LC E, C");
                 self.registers.e = self.registers.c;
                 4
             },
             // LC E, D
             0x5A => {
+                println!("LC E, D");
                 self.registers.e = self.registers.d;
                 4
             },
             // LD E, E
             0x5B => {
+                println!("LD E, E");
                 self.registers.e = self.registers.e;
                 4
             },
             // LD E, H
             0x5C => {
+                println!("LD E, H");
                 self.registers.e = self.registers.h;
                 4
             },
             // LD E, L
             0x5D => {
+                println!("LD E, L");
                 self.registers.e = self.registers.l;
                 4
             },
             // LD E, (HL)
             0x5E => {
+                println!("LD E, (HL)");
                 self.registers.e = self.mmu.read_byte(
                     self.registers.get_hl()
                 );
@@ -1174,41 +1269,49 @@ impl CPU {
             },
             // LD E, A
             0x5F => {
+                println!("LD E, A");
                 self.registers.e = self.registers.a;
                 4
             },
             // LD H, B
             0x60 => {
+                println!("LD H, B");
                 self.registers.h = self.registers.b;
                 4
             },
             // LD H, C
             0x61 => {
+                println!("LD H, C");
                 self.registers.h = self.registers.c;
                 4
             },
             // LD H, D
             0x62 => {
+                println!("LD H, D");
                 self.registers.h = self.registers.d;
                 4
             },
             // LD H, E
             0x63 => {
+                println!("LD H, E");
                 self.registers.h = self.registers.e;
                 4
             },
             // LD H, H
             0x64 => {
+                println!("LD H, H");
                 self.registers.h = self.registers.h;
                 4
             },
             // LD H, L
             0x65 => {
+                println!("LD H, L");
                 self.registers.h = self.registers.l;
                 4
             },
             // LD H, (HL)
             0x66 => {
+                println!("LD H, (HL)");
                 self.registers.h = self.mmu.read_byte(
                     self.registers.get_hl()
                 );
@@ -1216,41 +1319,49 @@ impl CPU {
             },
             // LD H, A
             0x67 => {
+                println!("LD H, A");
                 self.registers.h = self.registers.a;
                 4
             },
             // LD L, B
             0x68 => {
+                println!("LD L, B");
                 self.registers.l = self.registers.b;
                 4
             },
             // LC L, C
             0x69 => {
+                println!("LC L, C");
                 self.registers.l = self.registers.c;
                 4
             },
             // LC L, D
             0x6A => {
+                println!("LC L, D");
                 self.registers.l = self.registers.d;
                 4
             },
             // LD L, E
             0x6B => {
+                println!("LD L, E");
                 self.registers.l = self.registers.e;
                 4
             },
             // LD L, H
             0x6C => {
+                println!("LD L, H");
                 self.registers.l = self.registers.h;
                 4
             },
             // LD L, L
             0x6D => {
+                println!("LD L, L");
                 self.registers.l = self.registers.l;
                 4
             },
             // LD L, (HL)
             0x6E => {
+                println!("LD L, (HL)");
                 self.registers.l = self.mmu.read_byte(
                     self.registers.get_hl()
                 );
@@ -1258,11 +1369,13 @@ impl CPU {
             },
             // LD L, A
             0x6F => {
+                println!("LD L, A");
                 self.registers.l = self.registers.a;
                 4
             },
             // LD (HL), B
             0x70 => {
+                println!("LD (HL), B");
                 self.mmu.write_byte(
                     self.registers.get_hl(),
                     self.registers.b
@@ -1271,6 +1384,7 @@ impl CPU {
             },
             // LD (HL), C
             0x71 => {
+                println!("LD (HL), C");
                 self.mmu.write_byte(
                     self.registers.get_hl(),
                     self.registers.c
@@ -1279,6 +1393,7 @@ impl CPU {
             },
             // LD (HL), D
             0x72 => {
+                println!("LD (HL), D");
                 self.mmu.write_byte(
                     self.registers.get_hl(),
                     self.registers.d
@@ -1287,6 +1402,7 @@ impl CPU {
             },
             // LD (HL), E
             0x73 => {
+                println!("LD (HL), E");
                 self.mmu.write_byte(
                     self.registers.get_hl(),
                     self.registers.e
@@ -1295,6 +1411,7 @@ impl CPU {
             },
             // LD (HL), H
             0x74 => {
+                println!("LD (HL), H");
                 self.mmu.write_byte(
                     self.registers.get_hl(),
                     self.registers.h
@@ -1303,6 +1420,7 @@ impl CPU {
             },
             // LD (HL), L
             0x75 => {
+                println!("LD (HL), L");
                 self.mmu.write_byte(
                     self.registers.get_hl(),
                     self.registers.l
@@ -1311,11 +1429,13 @@ impl CPU {
             },
             // HALT
             0x76 => {
+                println!("HALT");
                 self.halt();
                 4
             },
             // LD (HL), A
             0x77 => {
+                println!("LD (HL), A");
                 self.mmu.write_byte(
                     self.registers.get_hl(),
                     self.registers.a
@@ -1324,36 +1444,43 @@ impl CPU {
             },
             // LD A, B
             0x78 => {
+                println!("LD A, B");
                 self.registers.a = self.registers.b;
                 4
             },
             // LC A, C
             0x79 => {
+                println!("LC A, C");
                 self.registers.a = self.registers.c;
                 4
             },
             // LC A, D
             0x7A => {
+                println!("LC A, D");
                 self.registers.a = self.registers.d;
                 4
             },
             // LD A, E
             0x7B => {
+                println!("LD A, E");
                 self.registers.a = self.registers.e;
                 4
             },
             // LD A, H
             0x7C => {
+                println!("LD A, H");
                 self.registers.a = self.registers.h;
                 4
             },
             // LD A, L
             0x7D => {
+                println!("LD A, L");
                 self.registers.a = self.registers.l;
                 4
             },
             // LD A, (HL)
             0x7E => {
+                println!("LD A, (HL)");
                 self.registers.a = self.mmu.read_byte(
                     self.registers.get_hl()
                 );
@@ -1361,11 +1488,13 @@ impl CPU {
             },
             // LD A, A
             0x7F => {
+                println!("LD A, A");
                 self.registers.a = self.registers.a;
                 4
             },
             // ADD A, B
             0x80 => {
+                println!("ADD A, B");
                 self.add(
                     self.registers.b
                 );
@@ -1373,6 +1502,7 @@ impl CPU {
             },
             // ADD A, C
             0x81 => {
+                println!("ADD A, C");
                 self.add(
                     self.registers.c
                 );
@@ -1380,6 +1510,7 @@ impl CPU {
             },
             // ADD A, D
             0x82 => {
+                println!("ADD A, D");
                 self.add(
                     self.registers.d
                 );
@@ -1387,6 +1518,7 @@ impl CPU {
             },
             // ADD A, E
             0x83 => {
+                println!("ADD A, E");
                 self.add(
                     self.registers.e
                 );
@@ -1394,6 +1526,7 @@ impl CPU {
             },
             // ADD A, H
             0x84 => {
+                println!("ADD A, H");
                 self.add(
                     self.registers.h
                 );
@@ -1401,6 +1534,7 @@ impl CPU {
             },
             // ADD A, L
             0x85 => {
+                println!("ADD A, L");
                 self.add(
                     self.registers.l
                 );
@@ -1408,6 +1542,7 @@ impl CPU {
             },
             // ADD A, (HL)
             0x86 => {
+                println!("ADD A, (HL)");
                 self.add(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -1417,6 +1552,7 @@ impl CPU {
             },
             // ADD A, A
             0x87 => {
+                println!("ADD A, A");
                 self.add(
                     self.registers.a
                 );
@@ -1424,6 +1560,7 @@ impl CPU {
             },
             // ADC A, B
             0x88 => {
+                println!("ADC A, B");
                 self.adc(
                     self.registers.b
                 );
@@ -1431,6 +1568,7 @@ impl CPU {
             },
             // ADC A, C
             0x89 => {
+                println!("ADC A, C");
                 self.adc(
                     self.registers.c
                 );
@@ -1438,6 +1576,7 @@ impl CPU {
             },
             // ADC A, D
             0x8A => {
+                println!("ADC A, D");
                 self.adc(
                     self.registers.d
                 );
@@ -1445,6 +1584,7 @@ impl CPU {
             },
             // ADC A, E
             0x8B => {
+                println!("ADC A, E");
                 self.adc(
                     self.registers.e
                 );
@@ -1452,6 +1592,7 @@ impl CPU {
             },
             // ADC A, H
             0x8C => {
+                println!("ADC A, H");
                 self.adc(
                     self.registers.h
                 );
@@ -1459,6 +1600,7 @@ impl CPU {
             },
             // ADC A, L
             0x8D => {
+                println!("ADC A, L");
                 self.adc(
                     self.registers.l
                 );
@@ -1466,6 +1608,7 @@ impl CPU {
             },
             // ADC A, (HL)
             0x8E => {
+                println!("ADC A, (HL)");
                 self.adc(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -1475,6 +1618,7 @@ impl CPU {
             },
             // ADC A, A
             0x8F => {
+                println!("ADC A, A");
                 self.adc(
                     self.registers.a
                 );
@@ -1482,6 +1626,7 @@ impl CPU {
             },
             // SUB A, B
             0x90 => {
+                println!("SUB A, B");
                 self.sub(
                     self.registers.b
                 );
@@ -1489,6 +1634,7 @@ impl CPU {
             },
             // SUB A, C
             0x91 => {
+                println!("SUB A, C");
                 self.sub(
                     self.registers.c
                 );
@@ -1496,6 +1642,7 @@ impl CPU {
             },
             // SUB A, D
             0x92 => {
+                println!("SUB A, D");
                 self.sub(
                     self.registers.d
                 );
@@ -1503,6 +1650,7 @@ impl CPU {
             },
             // SUB A, E
             0x93 => {
+                println!("SUB A, E");
                 self.sub(
                     self.registers.e
                 );
@@ -1510,6 +1658,7 @@ impl CPU {
             },
             // SUB A, H
             0x94 => {
+                println!("SUB A, H");
                 self.sub(
                     self.registers.h
                 );
@@ -1517,6 +1666,7 @@ impl CPU {
             },
             // SUB A, L
             0x95 => {
+                println!("SUB A, L");
                 self.sub(
                     self.registers.l
                 );
@@ -1524,6 +1674,7 @@ impl CPU {
             },
             // SUB A, (HL)
             0x96 => {
+                println!("SUB A, (HL)");
                 self.sub(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -1533,6 +1684,7 @@ impl CPU {
             },
             // SUB A, A
             0x97 => {
+                println!("SUB A, A");
                 self.sub(
                     self.registers.a
                 );
@@ -1540,6 +1692,7 @@ impl CPU {
             },
             // SBC A, B
             0x98 => {
+                println!("SBC A, B");
                 self.sbc(
                     self.registers.b
                 );
@@ -1547,6 +1700,7 @@ impl CPU {
             },
             // SBC A, C
             0x99 => {
+                println!("SBC A, C");
                 self.sbc(
                     self.registers.c
                 );
@@ -1554,6 +1708,7 @@ impl CPU {
             },
             // SBC A, D
             0x9A => {
+                println!("SBC A, D");
                 self.sbc(
                     self.registers.d
                 );
@@ -1561,6 +1716,7 @@ impl CPU {
             },
             // SBC A, E
             0x9B => {
+                println!("SBC A, E");
                 self.sbc(
                     self.registers.e
                 );
@@ -1568,6 +1724,7 @@ impl CPU {
             },
             // SBC A, H
             0x9C => {
+                println!("SBC A, H");
                 self.sbc(
                     self.registers.h
                 );
@@ -1575,6 +1732,7 @@ impl CPU {
             },
             // SBC A, L
             0x9D => {
+                println!("SBC A, L");
                 self.sbc(
                     self.registers.l
                 );
@@ -1582,6 +1740,7 @@ impl CPU {
             },
             // SBC A, (HL)
             0x9E => {
+                println!("SBC A, (HL)");
                 self.sbc(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -1591,6 +1750,7 @@ impl CPU {
             },
             // SBC A, A
             0x9F => {
+                println!("SBC A, A");
                 self.sbc(
                     self.registers.a
                 );
@@ -1598,6 +1758,7 @@ impl CPU {
             },
             // AND A, B
             0xA0 => {
+                println!("AND A, B");
                 self.and(
                     self.registers.b
                 );
@@ -1605,6 +1766,7 @@ impl CPU {
             },
             // AND A, C
             0xA1 => {
+                println!("AND A, C");
                 self.and(
                     self.registers.c
                 );
@@ -1612,6 +1774,7 @@ impl CPU {
             },
             // AND A, D
             0xA2 => {
+                println!("AND A, D");
                 self.and(
                     self.registers.d
                 );
@@ -1619,6 +1782,7 @@ impl CPU {
             },
             // AND A, E
             0xA3 => {
+                println!("AND A, E");
                 self.and(
                     self.registers.e
                 );
@@ -1626,6 +1790,7 @@ impl CPU {
             },
             // AND A, H
             0xA4 => {
+                println!("AND A, H");
                 self.and(
                     self.registers.h
                 );
@@ -1633,6 +1798,7 @@ impl CPU {
             },
             // AND A, L
             0xA5 => {
+                println!("AND A, L");
                 self.and(
                     self.registers.l
                 );
@@ -1640,6 +1806,7 @@ impl CPU {
             },
             // AND A, (HL)
             0xA6 => {
+                println!("AND A, (HL)");
                 self.and(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -1649,6 +1816,7 @@ impl CPU {
             },
             // AND A, A
             0xA7 => {
+                println!("AND A, A");
                 self.and(
                     self.registers.a
                 );
@@ -1656,6 +1824,7 @@ impl CPU {
             },
             // XOR A, B
             0xA8 => {
+                println!("XOR A, B");
                 self.xor(
                     self.registers.b
                 );
@@ -1663,6 +1832,7 @@ impl CPU {
             },
             // XOR A, C
             0xA9 => {
+                println!("XOR A, C");
                 self.xor(
                     self.registers.c
                 );
@@ -1670,6 +1840,7 @@ impl CPU {
             },
             // XOR A, D
             0xAA => {
+                println!("XOR A, D");
                 self.xor(
                     self.registers.d
                 );
@@ -1677,6 +1848,7 @@ impl CPU {
             },
             // XOR A, E
             0xAB => {
+                println!("XOR A, E");
                 self.xor(
                     self.registers.e
                 );
@@ -1684,6 +1856,7 @@ impl CPU {
             },
             // XOR A, H
             0xAC => {
+                println!("XOR A, H");
                 self.xor(
                     self.registers.h
                 );
@@ -1691,6 +1864,7 @@ impl CPU {
             },
             // XOR A, L
             0xAD => {
+                println!("XOR A, L");
                 self.xor(
                     self.registers.l
                 );
@@ -1698,6 +1872,7 @@ impl CPU {
             },
             // XOR A, (HL)
             0xAE => {
+                println!("XOR A, (HL)");
                 self.xor(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -1707,6 +1882,7 @@ impl CPU {
             },
             // XOR A, A
             0xAF => {
+                println!("XOR A, A");
                 self.xor(
                     self.registers.a
                 );
@@ -1714,6 +1890,7 @@ impl CPU {
             },
             // OR A, B
             0xB0 => {
+                println!("OR A, B");
                 self.or(
                     self.registers.b
                 );
@@ -1721,6 +1898,7 @@ impl CPU {
             },
             // OR A, C
             0xB1 => {
+                println!("OR A, C");
                 self.or(
                     self.registers.c
                 );
@@ -1728,6 +1906,7 @@ impl CPU {
             },
             // OR A, D
             0xB2 => {
+                println!("OR A, D");
                 self.or(
                     self.registers.d
                 );
@@ -1735,6 +1914,7 @@ impl CPU {
             },
             // OR A, E
             0xB3 => {
+                println!("OR A, E");
                 self.or(
                     self.registers.e
                 );
@@ -1742,6 +1922,7 @@ impl CPU {
             },
             // OR A, H
             0xB4 => {
+                println!("OR A, H");
                 self.or(
                     self.registers.h
                 );
@@ -1749,6 +1930,7 @@ impl CPU {
             },
             // OR A, L
             0xB5 => {
+                println!("OR A, L");
                 self.or(
                     self.registers.l
                 );
@@ -1756,6 +1938,7 @@ impl CPU {
             },
             // OR A, (HL)
             0xB6 => {
+                println!("OR A, (HL)");
                 self.or(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -1765,6 +1948,7 @@ impl CPU {
             },
             // OR A, A
             0xB7 => {
+                println!("OR A, A");
                 self.or(
                     self.registers.a
                 );
@@ -1772,6 +1956,7 @@ impl CPU {
             },
             // CP A, B
             0xB8 => {
+                println!("CP A, B");
                 self.cp(
                     self.registers.b
                 );
@@ -1779,6 +1964,7 @@ impl CPU {
             },
             // CP A, C
             0xB9 => {
+                println!("CP A, C");
                 self.cp(
                     self.registers.c
                 );
@@ -1786,6 +1972,7 @@ impl CPU {
             },
             // CP A, D
             0xBA => {
+                println!("CP A, D");
                 self.cp(
                     self.registers.d
                 );
@@ -1793,6 +1980,7 @@ impl CPU {
             },
             // CP A, E
             0xBB => {
+                println!("CP A, E");
                 self.cp(
                     self.registers.e
                 );
@@ -1800,6 +1988,7 @@ impl CPU {
             },
             // CP A, H
             0xBC => {
+                println!("CP A, H");
                 self.cp(
                     self.registers.h
                 );
@@ -1807,6 +1996,7 @@ impl CPU {
             },
             // CP A, L
             0xBD => {
+                println!("CP A, L");
                 self.cp(
                     self.registers.l
                 );
@@ -1814,6 +2004,7 @@ impl CPU {
             },
             // CP A, (HL)
             0xBE => {
+                println!("CP A, (HL)");
                 self.cp(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -1823,6 +2014,7 @@ impl CPU {
             },
             // CP A, A
             0xBF => {
+                println!("CP A, A");
                 self.cp(
                     self.registers.a
                 );
@@ -1830,6 +2022,7 @@ impl CPU {
             },
             // RET NZ
             0xC0 => {
+                println!("RET NZ");
                 if !self.registers.get_zero() {
                     self.registers.pc = self.fetchword();
                     20
@@ -1839,12 +2032,14 @@ impl CPU {
             },
             // POP BC
             0xC1 => {
+                println!("POP BC");
                 let value = self.pop();
                 self.registers.set_bc(value);
                 12
             },
             // JP NZ, a16
             0xC2 => {
+                println!("JP NZ, a16");
                 if !self.registers.get_zero() {
                     self.registers.pc = self.fetchword();
                     16
@@ -1855,11 +2050,13 @@ impl CPU {
             },
             // JP a16
             0xC3 => {
+                println!("JP a16");
                 self.registers.pc = self.fetchword();
                 16
             },
             // CALL NZ, a16
             0xC4 => {
+                println!("CALL NZ, a16");
                 if !self.registers.get_zero() {
                     self.push(
                         self.registers.pc + 2
@@ -1873,6 +2070,7 @@ impl CPU {
             },
             // PUSH BC
             0xC5 => {
+                println!("PUSH BC");
                 self.push(
                     self.registers.get_bc()
                 );
@@ -1880,17 +2078,20 @@ impl CPU {
             },
             // ADD A, d8
             0xC6 => {
+                println!("ADD A, d8");
                 let value = self.fetchbyte();
                 self.add(value);
                 8
             },
             // RST 00H
             0xC7 => {
+                println!("RST 00H");
                 self.rst(0x0000);
                 16
             },
             // RET Z
             0xC8 => {
+                println!("RET Z");
                 if self.registers.get_zero() {
                     self.registers.pc = self.fetchword();
                     20
@@ -1900,11 +2101,13 @@ impl CPU {
             },
             // RET
             0xC9 => {
+                println!("RET");
                 self.registers.pc = self.fetchword();
                 16
             },
             // JP Z, a16
             0xCA => {
+                println!("JP Z, a16");
                 if self.registers.get_zero() {
                     self.registers.pc = self.fetchword();
                     16
@@ -1915,10 +2118,12 @@ impl CPU {
             },
             // PREFIX CB
             0xCB => {
+                println!("PREFIX CB");
                 self.call_cb()
             },
             // CALL Z, a16
             0xCC => {
+                println!("CALL Z, a16");
                 if self.registers.get_zero() {
                     self.push(
                         self.registers.pc + 2
@@ -1932,6 +2137,7 @@ impl CPU {
             },
             // CALL a16
             0xCD => {
+                println!("CALL a16");
                 self.push(
                     self.registers.pc + 2
                 );
@@ -1940,17 +2146,20 @@ impl CPU {
             },
             // ADC A, d8
             0xCE => {
+                println!("ADC A, d8");
                 let value = self.fetchbyte();
                 self.adc(value);
                 8
             },
             // RST 08H
             0xCF => {
+                println!("RST 08H");
                 self.rst(0x0080);
                 16
             },
             // RET NC
             0xD0 => {
+                println!("RET NC");
                 if !self.registers.get_carry() {
                     self.registers.pc = self.fetchword();
                     20
@@ -1960,12 +2169,14 @@ impl CPU {
             },
             // POP DE
             0xD1 => {
+                println!("POP DE");
                 let value = self.pop();
                 self.registers.set_de(value);
                 12
             },
             // JP NC, a16
             0xD2 => {
+                println!("JP NC, a16");
                 if !self.registers.get_carry() {
                     self.registers.pc = self.fetchword();
                     16
@@ -1976,6 +2187,7 @@ impl CPU {
             },
             // CALL NC, a16
             0xD4 => {
+                println!("CALL NC, a16");
                 if !self.registers.get_carry() {
                     self.push(
                         self.registers.pc + 2
@@ -1989,6 +2201,7 @@ impl CPU {
             },
             // PUSH DE
             0xD5 => {
+                println!("PUSH DE");
                 self.push(
                     self.registers.get_de()
                 );
@@ -1996,17 +2209,20 @@ impl CPU {
             },
             // SUB d8
             0xD6 => {
+                println!("SUB d8");
                 let value = self.fetchbyte();
                 self.sub(value);
                 8
             },
             // RST 10H
             0xD7 => {
+                println!("RST 10H");
                 self.rst(0x0010);
                 16
             },
             // RET C
             0xD8 => {
+                println!("RET C");
                 if self.registers.get_carry() {
                     self.registers.pc = self.fetchword();
                     20
@@ -2016,6 +2232,7 @@ impl CPU {
             },
             // RETI
             0xD9 => {
+                println!("RETI");
                 self.registers.pc = self.pop();
                 self.ei = 1;
                 self.di = 0;
@@ -2023,6 +2240,7 @@ impl CPU {
             },
             // JP C, a16
             0xDA => {
+                println!("JP C, a16");
                 if self.registers.get_carry() {
                     self.registers.pc = self.fetchword();
                     16
@@ -2033,6 +2251,7 @@ impl CPU {
             },
             // CALL C, a16
             0xDC => {
+                println!("CALL C, a16");
                 if self.registers.get_carry() {
                     self.push(
                         self.registers.pc + 2
@@ -2046,17 +2265,20 @@ impl CPU {
             },
             // SBC A, d8
             0xDE => {
+                println!("SBC A, d8");
                 let value = self.fetchbyte();
                 self.sbc(value);
                 8
             },
             // RST 18H
             0xDF => {
+                println!("RST 18H");
                 self.rst(0x0018);
                 16
             },
             // LDH (a8), A
             0xE0 => {
+                println!("LDH (a8), A");
                 let value = self.fetchbyte();
                 self.mmu.write_byte(
                     0xFF00 | value as u16,
@@ -2066,12 +2288,14 @@ impl CPU {
             },
             // POP HL
             0xE1 => {
+                println!("POP HL");
                 let value = self.pop();
                 self.registers.set_hl(value);
                 12
             },
             // LDH (C), A
             0xE2 => {
+                println!("LDH (C), A");
                 self.mmu.write_byte(
                     0xFF00 | self.registers.c as u16,
                     self.registers.a
@@ -2080,6 +2304,7 @@ impl CPU {
             },
             // PUSH HL
             0xE5 => {
+                println!("PUSH HL");
                 self.push(
                     self.registers.get_hl()
                 );
@@ -2087,27 +2312,32 @@ impl CPU {
             },
             // AND d8
             0xE6 => {
+                println!("AND d8");
                 let value = self.fetchbyte();
                 self.and(value);
                 8
             },
             // RST 20H
             0xE7 => {
+                println!("RST 20H");
                 self.rst(0x0020);
                 16
             },
             // ADD SP, r8
             0xE8 => {
+                println!("ADD SP, r8");
                 self.registers.sp = self.addr8(self.registers.sp);
                 16
             },
             // JP (HL)
             0xE9 => {
+                println!("JP (HL)");
                 self.registers.pc = self.registers.get_hl();
                 4
             },
             // LD (a16), A
             0xEA => {
+                println!("LD (a16), A");
                 let value = self.fetchword();
                 self.mmu.write_byte(
                     value,
@@ -2117,17 +2347,20 @@ impl CPU {
             },
             // XOR d8
             0xEE => {
+                println!("XOR d8");
                 let value = self.fetchbyte();
                 self.xor(value);
                 8
             },
             // RST 28H
             0xEF => {
+                println!("RST 28H");
                 self.rst(0x0028);
                 16
             },
             // LDH A, (a8)
             0xF0 => {
+                println!("LDH A, (a8)");
                 let value = self.fetchbyte();
                 self.registers.a = self.mmu.read_byte(
                     0xFF00 | value as u16
@@ -2136,6 +2369,7 @@ impl CPU {
             },
             // POP AF
             0xF1 => {
+                println!("POP AF");
                 let value = self.pop();
                 self.registers.set_af(
                     value & 0xFFF0
@@ -2144,6 +2378,7 @@ impl CPU {
             },
             // LD A, (C)
             0xF2 => {
+                println!("LD A, (C)");
                 self.registers.a = self.mmu.read_byte(
                     0xFF00 | self.registers.c as u16
                 );
@@ -2151,6 +2386,7 @@ impl CPU {
             },
             // DI
             0xF3 => {
+                println!("DI");
                 self.di = 2;
                 // Cancel any scheduled effects of the ei instruction
                 self.ei = 0;
@@ -2158,6 +2394,7 @@ impl CPU {
             },
             // PUSH AF
             0xF5 => {
+                println!("PUSH AF");
                 self.push(
                     self.registers.get_af()
                 );
@@ -2165,50 +2402,59 @@ impl CPU {
             },
             // OR d8
             0xF6 => {
+                println!("OR d8");
                 let value = self.fetchbyte();
                 self.or(value);
                 8
             },
             // RST 30H
             0xF7 => {
+                println!("RST 30H");
                 self.rst(0x0030);
                 16
             },
             // LD HL, SP+r8
             0xF8 => {
+                println!("LD HL, SP+r8");
                 let value = self.addr8(self.registers.sp);
                 self.registers.set_hl(value);
                 12
             },
             // LD SP, HL
             0xF9 => {
+                println!("LD SP, HL");
                 self.registers.sp = self.registers.get_hl();
                 8
             },
             // LD A, (a16)
             0xFA => {
+                println!("LD A, (a16)");
                 let value = self.fetchword();
                 self.registers.a = self.mmu.read_byte(value);
                 12
             },
             // EI
             0xFB => {
+                println!("EI");
                 self.ei = 2;
                 4
             },
             // CP d8
             0xFE => {
+                println!("CP d8");
                 let value = self.fetchbyte();
                 self.cp(value);
                 8
             },
             // RST 38H
             0xFF => {
+                println!("RST 38H");
                 self.rst(0x0038);
                 16
             },
             // Si code non trouvé
             _ => {
+                println!("Si code non trouvé");
                 panic!("OpCode not found");
             }
         }
@@ -2231,6 +2477,7 @@ impl CPU {
         match op {
             // RLC B
             0x00 => {
+                println!("RLC B");
                 self.registers.b = self.rlc(
                     self.registers.b
                 );
@@ -2238,6 +2485,7 @@ impl CPU {
             },
             // RLC C
             0x01 => {
+                println!("RLC C");
                 self.registers.c = self.rlc(
                     self.registers.c
                 );
@@ -2245,6 +2493,7 @@ impl CPU {
             },
             // RLC D
             0x02 => {
+                println!("RLC D");
                 self.registers.d = self.rlc(
                     self.registers.d
                 );
@@ -2252,6 +2501,7 @@ impl CPU {
             },
             // RLC E
             0x03 => {
+                println!("RLC E");
                 self.registers.e = self.rlc(
                     self.registers.e
                 );
@@ -2259,6 +2509,7 @@ impl CPU {
             },
             // RLC H
             0x04 => {
+                println!("RLC H");
                 self.registers.h = self.rlc(
                     self.registers.h
                 );
@@ -2266,6 +2517,7 @@ impl CPU {
             },
             // RLC L
             0x05 => {
+                println!("RLC L");
                 self.registers.l = self.rlc(
                     self.registers.l
                 );
@@ -2273,6 +2525,7 @@ impl CPU {
             },
             // RLC (HL)
             0x06 => {
+                println!("RLC (HL)");
                 let value = self.rlc(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -2286,6 +2539,7 @@ impl CPU {
             },
             // RLC A
             0x07 => {
+                println!("RLC A");
                 self.registers.a = self.rlc(
                     self.registers.a
                 );
@@ -2293,6 +2547,7 @@ impl CPU {
             },
             // RRC B
             0x08 => {
+                println!("RRC B");
                 self.registers.b = self.rrc(
                     self.registers.b
                 );
@@ -2300,6 +2555,7 @@ impl CPU {
             },
             // RRC C
             0x09 => {
+                println!("RRC C");
                 self.registers.c = self.rrc(
                     self.registers.c
                 );
@@ -2307,6 +2563,7 @@ impl CPU {
             },
             // RRC D
             0x0A => {
+                println!("RRC D");
                 self.registers.d = self.rrc(
                     self.registers.d
                 );
@@ -2314,6 +2571,7 @@ impl CPU {
             },
             // RRC E
             0x0B => {
+                println!("RRC E");
                 self.registers.e = self.rrc(
                     self.registers.e
                 );
@@ -2321,6 +2579,7 @@ impl CPU {
             },
             // RRC H
             0x0C => {
+                println!("RRC H");
                 self.registers.h = self.rrc(
                     self.registers.h
                 );
@@ -2328,6 +2587,7 @@ impl CPU {
             },
             // RRC L
             0x0D => {
+                println!("RRC L");
                 self.registers.l = self.rrc(
                     self.registers.l
                 );
@@ -2335,6 +2595,7 @@ impl CPU {
             },
             // RRC (HL)
             0x0E => {
+                println!("RRC (HL)");
                 let value = self.rrc(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -2348,6 +2609,7 @@ impl CPU {
             },
             // RRC A
             0x0F => {
+                println!("RRC A");
                 self.registers.a = self.rrc(
                     self.registers.a
                 );
@@ -2355,6 +2617,7 @@ impl CPU {
             },
             // RL B
             0x10 => {
+                println!("RL B");
                 self.registers.b = self.rl(
                     self.registers.b
                 );
@@ -2362,6 +2625,7 @@ impl CPU {
             },
             // RL C
             0x11 => {
+                println!("RL C");
                 self.registers.c = self.rl(
                     self.registers.c
                 );
@@ -2369,6 +2633,7 @@ impl CPU {
             },
             // RL D
             0x12 => {
+                println!("RL D");
                 self.registers.d = self.rl(
                     self.registers.d
                 );
@@ -2376,6 +2641,7 @@ impl CPU {
             },
             // RC E
             0x13 => {
+                println!("RC E");
                 self.registers.e = self.rl(
                     self.registers.e
                 );
@@ -2383,6 +2649,7 @@ impl CPU {
             },
             // RC H
             0x14 => {
+                println!("RC H");
                 self.registers.h = self.rl(
                     self.registers.h
                 );
@@ -2390,6 +2657,7 @@ impl CPU {
             },
             // RL L
             0x15 => {
+                println!("RL L");
                 self.registers.l = self.rl(
                     self.registers.l
                 );
@@ -2397,6 +2665,7 @@ impl CPU {
             },
             // RL (HL)
             0x16 => {
+                println!("RL (HL)");
                 let value = self.rl(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -2410,6 +2679,7 @@ impl CPU {
             },
             // RL A
             0x17 => {
+                println!("RL A");
                 self.registers.a = self.rl(
                     self.registers.a
                 );
@@ -2417,6 +2687,7 @@ impl CPU {
             },
             // RR B
             0x18 => {
+                println!("RR B");
                 self.registers.b = self.rr(
                     self.registers.b
                 );
@@ -2424,6 +2695,7 @@ impl CPU {
             },
             // RR C
             0x19 => {
+                println!("RR C");
                 self.registers.c = self.rr(
                     self.registers.c
                 );
@@ -2431,6 +2703,7 @@ impl CPU {
             },
             // RR D
             0x1A => {
+                println!("RR D");
                 self.registers.d = self.rr(
                     self.registers.d
                 );
@@ -2438,6 +2711,7 @@ impl CPU {
             },
             // RR E
             0x1B => {
+                println!("RR E");
                 self.registers.e = self.rr(
                     self.registers.e
                 );
@@ -2445,6 +2719,7 @@ impl CPU {
             },
             // RR H
             0x1C => {
+                println!("RR H");
                 self.registers.h = self.rr(
                     self.registers.h
                 );
@@ -2452,6 +2727,7 @@ impl CPU {
             },
             // RR L
             0x1D => {
+                println!("RR L");
                 self.registers.l = self.rr(
                     self.registers.l
                 );
@@ -2459,6 +2735,7 @@ impl CPU {
             },
             // RR (HL)
             0x1E => {
+                println!("RR (HL)");
                 let value = self.rr(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -2472,6 +2749,7 @@ impl CPU {
             },
             // RR A
             0x1F => {
+                println!("RR A");
                 self.registers.a = self.rr(
                     self.registers.a
                 );
@@ -2479,6 +2757,7 @@ impl CPU {
             },
             // SLA B
             0x20 => {
+                println!("SLA B");
                 self.registers.b = self.sla(
                     self.registers.b
                 );
@@ -2486,6 +2765,7 @@ impl CPU {
             },
             // SLA C
             0x21 => {
+                println!("SLA C");
                 self.registers.c = self.sla(
                     self.registers.c
                 );
@@ -2493,6 +2773,7 @@ impl CPU {
             },
             // SLA D
             0x22 => {
+                println!("SLA D");
                 self.registers.d = self.sla(
                     self.registers.d
                 );
@@ -2500,6 +2781,7 @@ impl CPU {
             },
             // RC E
             0x23 => {
+                println!("RC E");
                 self.registers.e = self.sla(
                     self.registers.e
                 );
@@ -2507,6 +2789,7 @@ impl CPU {
             },
             // RC H
             0x24 => {
+                println!("RC H");
                 self.registers.h = self.sla(
                     self.registers.h
                 );
@@ -2514,6 +2797,7 @@ impl CPU {
             },
             // SLA L
             0x25 => {
+                println!("SLA L");
                 self.registers.l = self.sla(
                     self.registers.l
                 );
@@ -2521,6 +2805,7 @@ impl CPU {
             },
             // SLA (HL)
             0x26 => {
+                println!("SLA (HL)");
                 let value = self.sla(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -2534,6 +2819,7 @@ impl CPU {
             },
             // SLA A
             0x27 => {
+                println!("SLA A");
                 self.registers.a = self.sla(
                     self.registers.a
                 );
@@ -2541,6 +2827,7 @@ impl CPU {
             },
             // SRA B
             0x28 => {
+                println!("SRA B");
                 self.registers.b = self.sra(
                     self.registers.b
                 );
@@ -2548,6 +2835,7 @@ impl CPU {
             },
             // SRA C
             0x29 => {
+                println!("SRA C");
                 self.registers.c = self.sra(
                     self.registers.c
                 );
@@ -2555,6 +2843,7 @@ impl CPU {
             },
             // SRA D
             0x2A => {
+                println!("SRA D");
                 self.registers.d = self.sra(
                     self.registers.d
                 );
@@ -2562,6 +2851,7 @@ impl CPU {
             },
             // SRA E
             0x2B => {
+                println!("SRA E");
                 self.registers.e = self.sra(
                     self.registers.e
                 );
@@ -2569,6 +2859,7 @@ impl CPU {
             },
             // SRA H
             0x2C => {
+                println!("SRA H");
                 self.registers.h = self.sra(
                     self.registers.h
                 );
@@ -2576,6 +2867,7 @@ impl CPU {
             },
             // SRA L
             0x2D => {
+                println!("SRA L");
                 self.registers.l = self.sra(
                     self.registers.l
                 );
@@ -2583,6 +2875,7 @@ impl CPU {
             },
             // SRA (HL)
             0x2E => {
+                println!("SRA (HL)");
                 let value = self.sra(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -2596,6 +2889,7 @@ impl CPU {
             },
             // SRA A
             0x2F => {
+                println!("SRA A");
                 self.registers.a = self.sra(
                     self.registers.a
                 );
@@ -2603,6 +2897,7 @@ impl CPU {
             },
             // SWAP B
             0x30 => {
+                println!("SWAP B");
                 self.registers.b = self.swap(
                     self.registers.b
                 );
@@ -2610,6 +2905,7 @@ impl CPU {
             },
             // SWAP C
             0x31 => {
+                println!("SWAP C");
                 self.registers.c = self.swap(
                     self.registers.c
                 );
@@ -2617,6 +2913,7 @@ impl CPU {
             },
             // SWAP D
             0x32 => {
+                println!("SWAP D");
                 self.registers.d = self.swap(
                     self.registers.d
                 );
@@ -2624,6 +2921,7 @@ impl CPU {
             },
             // RC E
             0x33 => {
+                println!("RC E");
                 self.registers.e = self.swap(
                     self.registers.e
                 );
@@ -2631,6 +2929,7 @@ impl CPU {
             },
             // RC H
             0x34 => {
+                println!("RC H");
                 self.registers.h = self.swap(
                     self.registers.h
                 );
@@ -2638,6 +2937,7 @@ impl CPU {
             },
             // SWAP L
             0x35 => {
+                println!("SWAP L");
                 self.registers.l = self.swap(
                     self.registers.l
                 );
@@ -2645,6 +2945,7 @@ impl CPU {
             },
             // SWAP (HL)
             0x36 => {
+                println!("SWAP (HL)");
                 let value = self.swap(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -2658,6 +2959,7 @@ impl CPU {
             },
             // SWAP A
             0x37 => {
+                println!("SWAP A");
                 self.registers.a = self.swap(
                     self.registers.a
                 );
@@ -2665,6 +2967,7 @@ impl CPU {
             },
             // SRL B
             0x38 => {
+                println!("SRL B");
                 self.registers.b = self.srl(
                     self.registers.b
                 );
@@ -2672,6 +2975,7 @@ impl CPU {
             },
             // SRL C
             0x39 => {
+                println!("SRL C");
                 self.registers.c = self.srl(
                     self.registers.c
                 );
@@ -2679,6 +2983,7 @@ impl CPU {
             },
             // SRL D
             0x3A => {
+                println!("SRL D");
                 self.registers.d = self.srl(
                     self.registers.d
                 );
@@ -2686,6 +2991,7 @@ impl CPU {
             },
             // SRL E
             0x3B => {
+                println!("SRL E");
                 self.registers.e = self.srl(
                     self.registers.e
                 );
@@ -2693,6 +2999,7 @@ impl CPU {
             },
             // SRL H
             0x3C => {
+                println!("SRL H");
                 self.registers.h = self.srl(
                     self.registers.h
                 );
@@ -2700,6 +3007,7 @@ impl CPU {
             },
             // SRL L
             0x3D => {
+                println!("SRL L");
                 self.registers.l = self.srl(
                     self.registers.l
                 );
@@ -2707,6 +3015,7 @@ impl CPU {
             },
             // SRL (HL)
             0x3E => {
+                println!("SRL (HL)");
                 let value = self.srl(
                     self.mmu.read_byte(
                         self.registers.get_hl()
@@ -2720,6 +3029,7 @@ impl CPU {
             },
             // SRL A
             0x3F => {
+                println!("SRL A");
                 self.registers.a = self.srl(
                     self.registers.a
                 );
@@ -2727,36 +3037,43 @@ impl CPU {
             },
             // BIT 0, B
             0x40 => {
+                println!("BIT 0, B");
                 self.bit(0, self.registers.b);
                 8
             },
             // BIT 0, C
             0x41 => {
+                println!("BIT 0, C");
                 self.bit(0, self.registers.c);
                 8
             },
             // BIT 0, D
             0x42 => {
+                println!("BIT 0, D");
                 self.bit(0, self.registers.d);
                 8
             },
             // BIT 0, E
             0x43 => {
+                println!("BIT 0, E");
                 self.bit(0, self.registers.e);
                 8
             },
             // BIT 0, H
             0x44 => {
+                println!("BIT 0, H");
                 self.bit(0, self.registers.h);
                 8
             },
             // BIT 0, L
             0x45 => {
+                println!("BIT 0, L");
                 self.bit(0, self.registers.l);
                 8
             },
             // BIT 0, (HL)
             0x46 => {
+                println!("BIT 0, (HL)");
                 self.bit(
                     0,
                     self.mmu.read_byte(
@@ -2767,41 +3084,49 @@ impl CPU {
             },
             // BIT 0, A
             0x47 => {
+                println!("BIT 0, A");
                 self.bit(0, self.registers.a);
                 8
             },
             // BIT 1, B
             0x48 => {
+                println!("BIT 1, B");
                 self.bit(1, self.registers.b);
                 8
             },
             // BIT 1, C
             0x49 => {
+                println!("BIT 1, C");
                 self.bit(1, self.registers.c);
                 8
             },
             // BIT 1, D
             0x4A => {
+                println!("BIT 1, D");
                 self.bit(1, self.registers.d);
                 8
             },
             // BIT 1, E
             0x4B => {
+                println!("BIT 1, E");
                 self.bit(1, self.registers.e);
                 8
             },
             // BIT 1, H
             0x4C => {
+                println!("BIT 1, H");
                 self.bit(1, self.registers.h);
                 8
             },
             // BIT 1, L
             0x4D => {
+                println!("BIT 1, L");
                 self.bit(1, self.registers.l);
                 8
             },
             // BIT 1, (HL)
             0x4E => {
+                println!("BIT 1, (HL)");
                 self.bit(
                     1,
                     self.mmu.read_byte(
@@ -2812,41 +3137,49 @@ impl CPU {
             },
             // BIT 1, A
             0x4F => {
+                println!("BIT 1, A");
                 self.bit(1, self.registers.a);
                 8
             },
             // BIT 2, B
             0x50 => {
+                println!("BIT 2, B");
                 self.bit(2, self.registers.b);
                 8
             },
             // BIT 2, C
             0x51 => {
+                println!("BIT 2, C");
                 self.bit(2, self.registers.c);
                 8
             },
             // BIT 2, D
             0x52 => {
+                println!("BIT 2, D");
                 self.bit(2, self.registers.d);
                 8
             },
             // BIT 2, E
             0x53 => {
+                println!("BIT 2, E");
                 self.bit(2, self.registers.e);
                 8
             },
             // BIT 2, H
             0x54 => {
+                println!("BIT 2, H");
                 self.bit(2, self.registers.h);
                 8
             },
             // BIT 2, L
             0x55 => {
+                println!("BIT 2, L");
                 self.bit(2, self.registers.l);
                 8
             },
             // BIT 2, (HL)
             0x56 => {
+                println!("BIT 2, (HL)");
                 self.bit(
                     2,
                     self.mmu.read_byte(
@@ -2857,41 +3190,49 @@ impl CPU {
             },
             // BIT 2, A
             0x57 => {
+                println!("BIT 2, A");
                 self.bit(2, self.registers.a);
                 8
             },
             // BIT 3, B
             0x58 => {
+                println!("BIT 3, B");
                 self.bit(3, self.registers.b);
                 8
             },
             // BIT 3, C
             0x59 => {
+                println!("BIT 3, C");
                 self.bit(3, self.registers.c);
                 8
             },
             // BIT 3, D
             0x5A => {
+                println!("BIT 3, D");
                 self.bit(3, self.registers.d);
                 8
             },
             // BIT 3, E
             0x5B => {
+                println!("BIT 3, E");
                 self.bit(3, self.registers.e);
                 8
             },
             // BIT 3, H
             0x5C => {
+                println!("BIT 3, H");
                 self.bit(3, self.registers.h);
                 8
             },
             // BIT 3, L
             0x5D => {
+                println!("BIT 3, L");
                 self.bit(3, self.registers.l);
                 8
             },
             // BIT 3, (HL)
             0x5E => {
+                println!("BIT 3, (HL)");
                 self.bit(
                     3,
                     self.mmu.read_byte(
@@ -2902,41 +3243,49 @@ impl CPU {
             },
             // BIT 3, A
             0x5F => {
+                println!("BIT 3, A");
                 self.bit(3, self.registers.a);
                 8
             },
             // BIT 4, B
             0x60 => {
+                println!("BIT 4, B");
                 self.bit(4, self.registers.b);
                 8
             },
             // BIT 4, C
             0x61 => {
+                println!("BIT 4, C");
                 self.bit(4, self.registers.c);
                 8
             },
             // BIT 4, D
             0x62 => {
+                println!("BIT 4, D");
                 self.bit(4, self.registers.d);
                 8
             },
             // BIT 4, E
             0x63 => {
+                println!("BIT 4, E");
                 self.bit(4, self.registers.e);
                 8
             },
             // BIT 4, H
             0x64 => {
+                println!("BIT 4, H");
                 self.bit(4, self.registers.h);
                 8
             },
             // BIT 4, L
             0x65 => {
+                println!("BIT 4, L");
                 self.bit(4, self.registers.l);
                 8
             },
             // BIT 4, (HL)
             0x66 => {
+                println!("BIT 4, (HL)");
                 self.bit(
                     4,
                     self.mmu.read_byte(
@@ -2947,41 +3296,49 @@ impl CPU {
             },
             // BIT 4, A
             0x67 => {
+                println!("BIT 4, A");
                 self.bit(4, self.registers.a);
                 8
             },
             // BIT 5, B
             0x68 => {
+                println!("BIT 5, B");
                 self.bit(5, self.registers.b);
                 8
             },
             // BIT 5, C
             0x69 => {
+                println!("BIT 5, C");
                 self.bit(5, self.registers.c);
                 8
             },
             // BIT 5, D
             0x6A => {
+                println!("BIT 5, D");
                 self.bit(5, self.registers.d);
                 8
             },
             // BIT 5, E
             0x6B => {
+                println!("BIT 5, E");
                 self.bit(5, self.registers.e);
                 8
             },
             // BIT 5, H
             0x6C => {
+                println!("BIT 5, H");
                 self.bit(5, self.registers.h);
                 8
             },
             // BIT 5, L
             0x6D => {
+                println!("BIT 5, L");
                 self.bit(5, self.registers.l);
                 8
             },
             // BIT 5, (HL)
             0x6E => {
+                println!("BIT 5, (HL)");
                 self.bit(
                     5,
                     self.mmu.read_byte(
@@ -2992,41 +3349,49 @@ impl CPU {
             },
             // BIT 5, A
             0x6F => {
+                println!("BIT 5, A");
                 self.bit(5, self.registers.a);
                 8
             },
             // BIT 6, B
             0x70 => {
+                println!("BIT 6, B");
                 self.bit(6, self.registers.b);
                 8
             },
             // BIT 6, C
             0x71 => {
+                println!("BIT 6, C");
                 self.bit(6, self.registers.c);
                 8
             },
             // BIT 6, D
             0x72 => {
+                println!("BIT 6, D");
                 self.bit(6, self.registers.d);
                 8
             },
             // BIT 6, E
             0x73 => {
+                println!("BIT 6, E");
                 self.bit(6, self.registers.e);
                 8
             },
             // BIT 6, H
             0x74 => {
+                println!("BIT 6, H");
                 self.bit(6, self.registers.h);
                 8
             },
             // BIT 6, L
             0x75 => {
+                println!("BIT 6, L");
                 self.bit(6, self.registers.l);
                 8
             },
             // BIT 6, (HL)
             0x76 => {
+                println!("BIT 6, (HL)");
                 self.bit(
                     6,
                     self.mmu.read_byte(
@@ -3037,41 +3402,49 @@ impl CPU {
             },
             // BIT 6, A
             0x77 => {
+                println!("BIT 6, A");
                 self.bit(6, self.registers.a);
                 8
             },
             // BIT 7, B
             0x78 => {
+                println!("BIT 7, B");
                 self.bit(7, self.registers.b);
                 8
             },
             // BIT 7, C
             0x79 => {
+                println!("BIT 7, C");
                 self.bit(7, self.registers.c);
                 8
             },
             // BIT 7, D
             0x7A => {
+                println!("BIT 7, D");
                 self.bit(7, self.registers.d);
                 8
             },
             // BIT 7, E
             0x7B => {
+                println!("BIT 7, E");
                 self.bit(7, self.registers.e);
                 8
             },
             // BIT 7, H
             0x7C => {
+                println!("BIT 7, H");
                 self.bit(7, self.registers.h);
                 8
             },
             // BIT 7, L
             0x7D => {
+                println!("BIT 7, L");
                 self.bit(7, self.registers.l);
                 8
             },
             // BIT 7, (HL)
             0x7E => {
+                println!("BIT 7, (HL)");
                 self.bit(
                     7,
                     self.mmu.read_byte(
@@ -3082,41 +3455,49 @@ impl CPU {
             },
             // BIT 7, A
             0x7F => {
+                println!("BIT 7, A");
                 self.bit(7, self.registers.a);
                 8
             },
             // RES 0, B
             0x80 => {
+                println!("RES 0, B");
                 self.registers.b = self.res(0, self.registers.b);
                 8
             },
             // RES 0, C
             0x81 => {
+                println!("RES 0, C");
                 self.registers.c = self.res(0, self.registers.c);
                 8
             },
             // RES 0, D
             0x82 => {
+                println!("RES 0, D");
                 self.registers.d = self.res(0, self.registers.d);
                 8
             },
             // RES 0, E
             0x83 => {
+                println!("RES 0, E");
                 self.registers.e = self.res(0, self.registers.e);
                 8
             },
             // RES 0, H
             0x84 => {
+                println!("RES 0, H");
                 self.registers.e = self.res(0, self.registers.h);
                 8
             },
             // RES 0, L
             0x85 => {
+                println!("RES 0, L");
                 self.registers.l = self.res(0, self.registers.l);
                 8
             },
             // RES 0, (HL)
             0x86 => {
+                println!("RES 0, (HL)");
                 let value = self.res(
                     0,
                     self.mmu.read_byte(
@@ -3131,41 +3512,49 @@ impl CPU {
             },
             // RES 0, A
             0x87 => {
+                println!("RES 0, A");
                 self.registers.a = self.res(0, self.registers.a);
                 8
             },
             // RES 1, B
             0x88 => {
+                println!("RES 1, B");
                 self.registers.b = self.res(1, self.registers.b);
                 8
             },
             // RES 1, C
             0x89 => {
+                println!("RES 1, C");
                 self.registers.c = self.res(1, self.registers.c);
                 8
             },
             // RES 1, D
             0x8A => {
+                println!("RES 1, D");
                 self.registers.d = self.res(1, self.registers.d);
                 8
             },
             // RES 1, E
             0x8B => {
+                println!("RES 1, E");
                 self.registers.e = self.res(1, self.registers.e);
                 8
             },
             // RES 1, H
             0x8C => {
+                println!("RES 1, H");
                 self.registers.h = self.res(1, self.registers.h);
                 8
             },
             // RES 1, L
             0x8D => {
+                println!("RES 1, L");
                 self.registers.l = self.res(1, self.registers.l);
                 8
             },
             // RES 1, (HL)
             0x8E => {
+                println!("RES 1, (HL)");
                 let value = self.res(
                     1,
                     self.mmu.read_byte(
@@ -3180,41 +3569,49 @@ impl CPU {
             },
             // RES 1, A
             0x8F => {
+                println!("RES 1, A");
                 self.registers.a = self.res(1, self.registers.a);
                 8
             },
             // RES 2, B
             0x90 => {
+                println!("RES 2, B");
                 self.registers.b = self.res(2, self.registers.b);
                 8
             },
             // RES 2, C
             0x91 => {
+                println!("RES 2, C");
                 self.registers.c = self.res(2, self.registers.c);
                 8
             },
             // RES 2, D
             0x92 => {
+                println!("RES 2, D");
                 self.registers.d = self.res(2, self.registers.d);
                 8
             },
             // RES 2, E
             0x93 => {
+                println!("RES 2, E");
                 self.registers.e = self.res(2, self.registers.e);
                 8
             },
             // RES 2, H
             0x94 => {
+                println!("RES 2, H");
                 self.registers.h = self.res(2, self.registers.h);
                 8
             },
             // RES 2, L
             0x95 => {
+                println!("RES 2, L");
                 self.registers.l = self.res(2, self.registers.l);
                 8
             },
             // RES 2, (HL)
             0x96 => {
+                println!("RES 2, (HL)");
                 let value = self.res(
                     2,
                     self.mmu.read_byte(
@@ -3229,41 +3626,49 @@ impl CPU {
             },
             // RES 2, A
             0x97 => {
+                println!("RES 2, A");
                 self.registers.a = self.res(2, self.registers.a);
                 8
             },
             // RES 3, B
             0x98 => {
+                println!("RES 3, B");
                 self.registers.b = self.res(3, self.registers.b);
                 8
             },
             // RES 3, C
             0x99 => {
+                println!("RES 3, C");
                 self.registers.c = self.res(3, self.registers.c);
                 8
             },
             // RES 3, D
             0x9A => {
+                println!("RES 3, D");
                 self.registers.d = self.res(3, self.registers.d);
                 8
             },
             // RES 3, E
             0x9B => {
+                println!("RES 3, E");
                 self.registers.e = self.res(3, self.registers.e);
                 8
             },
             // RES 3, H
             0x9C => {
+                println!("RES 3, H");
                 self.registers.h = self.res(3, self.registers.h);
                 8
             },
             // RES 3, L
             0x9D => {
+                println!("RES 3, L");
                 self.registers.l = self.res(3, self.registers.l);
                 8
             },
             // RES 3, (HL)
             0x9E => {
+                println!("RES 3, (HL)");
                 let value = self.res(
                     3,
                     self.mmu.read_byte(
@@ -3278,41 +3683,49 @@ impl CPU {
             },
             // RES 3, A
             0x9F => {
+                println!("RES 3, A");
                 self.registers.a = self.res(3, self.registers.a);
                 8
             },
             // RES 4, B
             0xA0 => {
+                println!("RES 4, B");
                 self.registers.b = self.res(4, self.registers.b);
                 8
             },
             // RES 4, C
             0xA1 => {
+                println!("RES 4, C");
                 self.registers.c = self.res(4, self.registers.c);
                 8
             },
             // RES 4, D
             0xA2 => {
+                println!("RES 4, D");
                 self.registers.d = self.res(4, self.registers.d);
                 8
             },
             // RES 4, E
             0xA3 => {
+                println!("RES 4, E");
                 self.registers.e = self.res(4, self.registers.e);
                 8
             },
             // RES 4, H
             0xA4 => {
+                println!("RES 4, H");
                 self.registers.h = self.res(4, self.registers.h);
                 8
             },
             // RES 4, L
             0xA5 => {
+                println!("RES 4, L");
                 self.registers.l = self.res(4, self.registers.l);
                 8
             },
             // RES 4, (HL)
             0xA6 => {
+                println!("RES 4, (HL)");
                 let value = self.res(
                     4,
                     self.mmu.read_byte(
@@ -3327,41 +3740,49 @@ impl CPU {
             },
             // RES 4, A
             0xA7 => {
+                println!("RES 4, A");
                 self.registers.a = self.res(4, self.registers.a);
                 8
             },
             // RES 5, B
             0xA8 => {
+                println!("RES 5, B");
                 self.registers.b = self.res(5, self.registers.b);
                 8
             },
             // RES 5, C
             0xA9 => {
+                println!("RES 5, C");
                 self.registers.c = self.res(5, self.registers.c);
                 8
             },
             // RES 5, D
             0xAA => {
+                println!("RES 5, D");
                 self.registers.d = self.res(5, self.registers.d);
                 8
             },
             // RES 5, E
             0xAB => {
+                println!("RES 5, E");
                 self.registers.e = self.res(5, self.registers.e);
                 8
             },
             // RES 5, H
             0xAC => {
+                println!("RES 5, H");
                 self.registers.h = self.res(5, self.registers.h);
                 8
             },
             // RES 5, L
             0xAD => {
+                println!("RES 5, L");
                 self.registers.l = self.res(5, self.registers.l);
                 8
             },
             // RES 5, (HL)
             0xAE => {
+                println!("RES 5, (HL)");
                 let value = self.res(
                     5,
                     self.mmu.read_byte(
@@ -3376,41 +3797,49 @@ impl CPU {
             },
             // RES 5, A
             0xAF => {
+                println!("RES 5, A");
                 self.registers.a = self.res(5, self.registers.a);
                 8
             },
             // RES 6, B
             0xB0 => {
+                println!("RES 6, B");
                 self.registers.b = self.res(6, self.registers.b);
                 8
             },
             // RES 6, C
             0xB1 => {
+                println!("RES 6, C");
                 self.registers.c = self.res(6, self.registers.c);
                 8
             },
             // RES 6, D
             0xB2 => {
+                println!("RES 6, D");
                 self.registers.d = self.res(6, self.registers.d);
                 8
             },
             // RES 6, E
             0xB3 => {
+                println!("RES 6, E");
                 self.registers.e = self.res(6, self.registers.e);
                 8
             },
             // RES 6, H
             0xB4 => {
+                println!("RES 6, H");
                 self.registers.h = self.res(6, self.registers.h);
                 8
             },
             // RES 6, L
             0xB5 => {
+                println!("RES 6, L");
                 self.registers.l = self.res(6, self.registers.l);
                 8
             },
             // RES 6, (HL)
             0xB6 => {
+                println!("RES 6, (HL)");
                 let value = self.res(
                     6,
                     self.mmu.read_byte(
@@ -3425,41 +3854,49 @@ impl CPU {
             },
             // RES 6, A
             0xB7 => {
+                println!("RES 6, A");
                 self.registers.a = self.res(6, self.registers.a);
                 8
             },
             // RES 7, B
             0xB8 => {
+                println!("RES 7, B");
                 self.registers.b = self.res(7, self.registers.b);
                 8
             },
             // RES 7, C
             0xB9 => {
+                println!("RES 7, C");
                 self.registers.c = self.res(7, self.registers.c);
                 8
             },
             // RES 7, D
             0xBA => {
+                println!("RES 7, D");
                 self.registers.d = self.res(7, self.registers.d);
                 8
             },
             // RES 7, E
             0xBB => {
+                println!("RES 7, E");
                 self.registers.e = self.res(7, self.registers.e);
                 8
             },
             // RES 7, H
             0xBC => {
+                println!("RES 7, H");
                 self.registers.h = self.res(7, self.registers.h);
                 8
             },
             // RES 7, L
             0xBD => {
+                println!("RES 7, L");
                 self.registers.l = self.res(7, self.registers.l);
                 8
             },
             // RES 7, (HL)
             0xBE => {
+                println!("RES 7, (HL)");
                 let value = self.res(
                     7,
                     self.mmu.read_byte(
@@ -3474,41 +3911,49 @@ impl CPU {
             },
             // RES 7, A
             0xBF => {
+                println!("RES 7, A");
                 self.registers.a = self.res(7, self.registers.a);
                 8
             },
             // SET 0, B
             0xC0 => {
+                println!("SET 0, B");
                 self.registers.b = self.set(0, self.registers.b);
                 8
             },
             // SET 0, C
             0xC1 => {
+                println!("SET 0, C");
                 self.registers.c = self.set(0, self.registers.c);
                 8
             },
             // SET 0, D
             0xC2 => {
+                println!("SET 0, D");
                 self.registers.d = self.set(0, self.registers.d);
                 8
             },
             // SET 0, E
             0xC3 => {
+                println!("SET 0, E");
                 self.registers.e = self.set(0, self.registers.e);
                 8
             },
             // SET 0, H
             0xC4 => {
+                println!("SET 0, H");
                 self.registers.h = self.set(0, self.registers.h);
                 8
             },
             // SET 0, L
             0xC5 => {
+                println!("SET 0, L");
                 self.registers.l = self.set(0, self.registers.l);
                 8
             },
             // SET 0, (HL)
             0xC6 => {
+                println!("SET 0, (HL)");
                 let value = self.set(
                     0,
                     self.mmu.read_byte(
@@ -3523,41 +3968,49 @@ impl CPU {
             },
             // SET 0, A
             0xC7 => {
+                println!("SET 0, A");
                 self.registers.a = self.set(0, self.registers.a);
                 8
             },
             // SET 1, B
             0xC8 => {
+                println!("SET 1, B");
                 self.registers.b = self.set(1, self.registers.b);
                 8
             },
             // SET 1, C
             0xC9 => {
+                println!("SET 1, C");
                 self.registers.c = self.set(1, self.registers.c);
                 8
             },
             // SET 1, D
             0xCA => {
+                println!("SET 1, D");
                 self.registers.d = self.set(1, self.registers.d);
                 8
             },
             // SET 1, E
             0xCB => {
+                println!("SET 1, E");
                 self.registers.e = self.set(1, self.registers.e);
                 8
             },
             // SET 1, H
             0xCC => {
+                println!("SET 1, H");
                 self.registers.h = self.set(1, self.registers.h);
                 8
             },
             // SET 1, L
             0xCD => {
+                println!("SET 1, L");
                 self.registers.l = self.set(1, self.registers.l);
                 8
             },
             // SET 1, (HL)
             0xCE => {
+                println!("SET 1, (HL)");
                 let value = self.set(
                     1,
                     self.mmu.read_byte(
@@ -3572,41 +4025,49 @@ impl CPU {
             },
             // SET 1, A
             0xCF => {
+                println!("SET 1, A");
                 self.registers.a = self.set(1, self.registers.a);
                 8
             },
             // SET 2, B
             0xD0 => {
+                println!("SET 2, B");
                 self.registers.b = self.set(2, self.registers.b);
                 8
             },
             // SET 2, C
             0xD1 => {
+                println!("SET 2, C");
                 self.registers.c = self.set(2, self.registers.c);
                 8
             },
             // SET 2, D
             0xD2 => {
+                println!("SET 2, D");
                 self.registers.d = self.set(2, self.registers.d);
                 8
             },
             // SET 2, E
             0xD3 => {
+                println!("SET 2, E");
                 self.registers.e = self.set(2, self.registers.e);
                 8
             },
             // SET 2, H
             0xD4 => {
+                println!("SET 2, H");
                 self.registers.h = self.set(2, self.registers.h);
                 8
             },
             // SET 2, L
             0xD5 => {
+                println!("SET 2, L");
                 self.registers.l = self.set(2, self.registers.l);
                 8
             },
             // SET 2, (HL)
             0xD6 => {
+                println!("SET 2, (HL)");
                 let value = self.set(
                     2,
                     self.mmu.read_byte(
@@ -3621,41 +4082,49 @@ impl CPU {
             },
             // SET 2, A
             0xD7 => {
+                println!("SET 2, A");
                 self.registers.a = self.set(2, self.registers.a);
                 8
             },
             // SET 3, B
             0xD8 => {
+                println!("SET 3, B");
                 self.registers.b = self.set(3, self.registers.b);
                 8
             },
             // SET 3, C
             0xD9 => {
+                println!("SET 3, C");
                 self.registers.c = self.set(3, self.registers.c);
                 8
             },
             // SET 3, D
             0xDA => {
+                println!("SET 3, D");
                 self.registers.d = self.set(3, self.registers.d);
                 8
             },
             // SET 3, E
             0xDB => {
+                println!("SET 3, E");
                 self.registers.e = self.set(3, self.registers.e);
                 8
             },
             // SET 3, H
             0xDC => {
+                println!("SET 3, H");
                 self.registers.h = self.set(3, self.registers.h);
                 8
             },
             // SET 3, L
             0xDD => {
+                println!("SET 3, L");
                 self.registers.l = self.set(3, self.registers.l);
                 8
             },
             // SET 3, (HL)
             0xDE => {
+                println!("SET 3, (HL)");
                 let value = self.set(
                     3,
                     self.mmu.read_byte(
@@ -3670,41 +4139,49 @@ impl CPU {
             },
             // SET 3, A
             0xDF => {
+                println!("SET 3, A");
                 self.registers.a = self.set(3, self.registers.a);
                 8
             },
             // SET 4, B
             0xE0 => {
+                println!("SET 4, B");
                 self.registers.b = self.set(4, self.registers.b);
                 8
             },
             // SET 4, C
             0xE1 => {
+                println!("SET 4, C");
                 self.registers.c = self.set(4, self.registers.c);
                 8
             },
             // SET 4, D
             0xE2 => {
+                println!("SET 4, D");
                 self.registers.d = self.set(4, self.registers.d);
                 8
             },
             // SET 4, E
             0xE3 => {
+                println!("SET 4, E");
                 self.registers.e = self.set(4, self.registers.e);
                 8
             },
             // SET 4, H
             0xE4 => {
+                println!("SET 4, H");
                 self.registers.h = self.set(4, self.registers.h);
                 8
             },
             // SET 4, L
             0xE5 => {
+                println!("SET 4, L");
                 self.registers.l = self.set(4, self.registers.l);
                 8
             },
             // SET 4, (HL)
             0xE6 => {
+                println!("SET 4, (HL)");
                 let value = self.set(
                     4,
                     self.mmu.read_byte(
@@ -3719,41 +4196,49 @@ impl CPU {
             },
             // SET 4, A
             0xE7 => {
+                println!("SET 4, A");
                 self.registers.a = self.set(4, self.registers.a);
                 8
             },
             // SET 5, B
             0xE8 => {
+                println!("SET 5, B");
                 self.registers.b = self.set(5, self.registers.b);
                 8
             },
             // SET 5, C
             0xE9 => {
+                println!("SET 5, C");
                 self.registers.c = self.set(5, self.registers.c);
                 8
             },
             // SET 5, D
             0xEA => {
+                println!("SET 5, D");
                 self.registers.d = self.set(5, self.registers.d);
                 8
             },
             // SET 5, E
             0xEB => {
+                println!("SET 5, E");
                 self.registers.e = self.set(5, self.registers.e);
                 8
             },
             // SET 5, H
             0xEC => {
+                println!("SET 5, H");
                 self.registers.h = self.set(5, self.registers.h);
                 8
             },
             // SET 5, L
             0xED => {
+                println!("SET 5, L");
                 self.registers.l = self.set(5, self.registers.l);
                 8
             },
             // SET 5, (HL)
             0xEE => {
+                println!("SET 5, (HL)");
                 let value = self.set(
                     5,
                     self.mmu.read_byte(
@@ -3768,41 +4253,49 @@ impl CPU {
             },
             // SET 5, A
             0xEF => {
+                println!("SET 5, A");
                 self.registers.a = self.set(5, self.registers.a);
                 8
             },
             // SET 6, B
             0xF0 => {
+                println!("SET 6, B");
                 self.registers.b = self.set(6, self.registers.b);
                 8
             },
             // SET 6, C
             0xF1 => {
+                println!("SET 6, C");
                 self.registers.c = self.set(6, self.registers.c);
                 8
             },
             // SET 6, D
             0xF2 => {
+                println!("SET 6, D");
                 self.registers.d = self.set(6, self.registers.d);
                 8
             },
             // SET 6, E
             0xF3 => {
+                println!("SET 6, E");
                 self.registers.e = self.set(6, self.registers.e);
                 8
             },
             // SET 6, H
             0xF4 => {
+                println!("SET 6, H");
                 self.registers.h = self.set(6, self.registers.h);
                 8
             },
             // SET 6, L
             0xF5 => {
+                println!("SET 6, L");
                 self.registers.l = self.set(6, self.registers.l);
                 8
             },
             // SET 6, (HL)
             0xF6 => {
+                println!("SET 6, (HL)");
                 let value = self.set(
                     6,
                     self.mmu.read_byte(
@@ -3817,41 +4310,49 @@ impl CPU {
             },
             // SET 6, A
             0xF7 => {
+                println!("SET 6, A");
                 self.registers.a = self.set(6, self.registers.a);
                 8
             },
             // SET 7, B
             0xF8 => {
+                println!("SET 7, B");
                 self.registers.b = self.set(7, self.registers.b);
                 8
             },
             // SET 7, C
             0xF9 => {
+                println!("SET 7, C");
                 self.registers.c = self.set(7, self.registers.c);
                 8
             },
             // SET 7, D
             0xFA => {
+                println!("SET 7, D");
                 self.registers.d = self.set(7, self.registers.d);
                 8
             },
             // SET 7, E
             0xFB => {
+                println!("SET 7, E");
                 self.registers.e = self.set(7, self.registers.e);
                 8
             },
             // SET 7, H
             0xFC => {
+                println!("SET 7, H");
                 self.registers.h = self.set(7, self.registers.h);
                 8
             },
             // SET 7, L
             0xFD => {
+                println!("SET 7, L");
                 self.registers.l = self.set(7, self.registers.l);
                 8
             },
             // SET 7, (HL)
             0xFE => {
+                println!("SET 7, (HL)");
                 let value = self.set(
                     7,
                     self.mmu.read_byte(
@@ -3866,6 +4367,7 @@ impl CPU {
             },
             // SET 7, A
             0xFF => {
+                println!("SET 7, A");
                 self.registers.a = self.set(7, self.registers.a);
                 8
             },
