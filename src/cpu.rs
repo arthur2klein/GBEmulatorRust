@@ -419,7 +419,11 @@ impl CPU {
     /// ```
     fn fetchbyte(&mut self) -> u8 {
         let res = self.mmu.read_byte(self.registers.pc);
-        println!("pc = {:#04x}, res = {:#02x}", self.registers.pc, res);
+        println!(
+            "Reading a byte at pc = {:#04x}: res = {:#02x}",
+            self.registers.pc,
+            res
+        );
         self.registers.pc = self.registers.pc.wrapping_add(1);
         res
     }
@@ -440,7 +444,11 @@ impl CPU {
     /// ```
     fn fetchword(&mut self) -> u16 {
         let res = self.mmu.read_word(self.registers.pc);
-        println!("pc = {:#04x}, res = {:#04x}", self.registers.pc, res);
+        println!(
+            "Reading a word at pc = {:#04x}: res = {:#04x}",
+            self.registers.pc,
+            res
+        );
         self.registers.pc = self.registers.pc.wrapping_add(2);
         res
     }
@@ -565,7 +573,6 @@ impl CPU {
         while !self.should_stop {
             let time = SystemTime::now();
             let time_used = self.execute_step();
-            println!("{:?}", &self.registers);
             // One cycle lasts 2385ns
             sleep(
                 Duration::from_nanos((2385 * time_used) as u64).saturating_sub(
@@ -589,7 +596,10 @@ impl CPU {
     /// new_cpu.receive_op();
     /// ```
     fn receive_op(&mut self) -> u32 {
-        println!("Execution of the operation at address {}/{}", self.registers.pc, 0x4000);
+        println!(
+            "Execution of the operation at address {:#04x}/0x4000",
+            self.registers.pc,
+        );
         assert!(self.registers.pc < 0x4000);
         let op = self.fetchbyte();
         match op {
