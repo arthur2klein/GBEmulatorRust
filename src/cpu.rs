@@ -573,6 +573,7 @@ impl CPU {
                 )
             );
         }
+        self.mmu.close();
     }
 
     /// Reads an instruction and execute it from the normal table

@@ -326,4 +326,9 @@ impl MMU {
         self.is_double_speed = !self.is_double_speed;
         self.io.receive_stop();
     }
+
+    /// Function called when the MMU is no longer needed
+    pub fn close(&self) {
+        self.cartridge.close();
+    }
 }

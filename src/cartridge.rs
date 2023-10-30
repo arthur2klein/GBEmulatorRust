@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Read;
+use std::io::Write;
 
 /// Contains the memory of a game cartridge
 pub struct Cartridge {
@@ -7,6 +8,8 @@ pub struct Cartridge {
     rom: Vec<u8>,
     /// Ram of the cartridge containing the save
     ram: Vec<u8>,
+    /// Path of the save file
+    save_file: String,
 }
 
 impl Cartridge {
@@ -24,10 +27,50 @@ impl Cartridge {
             .expect("Cannot read the cartridge.");
         let mut rom: Vec<u8> = Vec::new();
         file.read_to_end(&mut rom).unwrap();
+        let game_name = file_path.rsplit_once("/").unwrap().1;
+        let save_file = format!("save/{}.save", game_name);
         Self {
             rom,
-            ram: vec![0; 0x2000],
+            ram: Self::ram_from_save(&save_file),
+            save_file,
         }
+    }
+
+    /// Create the ram using an existing save file
+    ///
+    /// If no save file is found, an empy ram will be created.
+    ///
+    /// # Arguments
+    /// **save_name (&str)**: Path of the save file
+    ///
+    /// # Returns
+    /// **`Vec<u8>`**: Ram of the cartridge
+    fn ram_from_save(save_name: &str) -> Vec<u8> {
+        match File::open(save_name) {
+            Ok(mut file) => {
+                let mut res: Vec<u8> = Vec::new();
+                file.read_to_end(&mut res).unwrap();
+                res
+            },
+            Err(_) => {
+                vec![0x00; 0x2000]
+            }
+        }
+    }
+
+    /// Function called when the cartridge is no longer needed
+    ///
+    /// Save the state of the ram
+    pub fn close(&self) {
+        self.save();
+    }
+
+    /// Save the current state of the ram
+    ///
+    /// The file will be either truncated or created
+    fn save(&self) {
+        let mut file = File::create(&self.save_file).unwrap();
+        file.write_all(&self.ram).unwrap();
     }
 
     /// Read a byte in the rom
