@@ -357,6 +357,20 @@ impl GPU {
     fn should_draw_window(&self) -> bool {
         self.lcd_control & 0x20 == 0x20
     }
+    
+    /// Returns the beginning of the region of the memory that links the value
+    /// of the tile map with the addresses of the bytes
+    ///
+    /// # Returns
+    /// Beginning of the region of the memory that links the value of the tile
+    /// map with the addresses of the bytes
+    fn bg_and_window_tile_data_area(&self) -> u16 {
+        if self.lcd_control & 0x10 == 0x10 {
+            0x8000
+        } else {
+            0x9000
+        }
+    }
 
     /// Returns the beginning address of the tile map area
     ///
@@ -543,10 +557,15 @@ impl GPU {
         y_in_tile: u8,
         x_in_tile: u8,
     ) -> u8{
-        let line_tile = tile_address + (y_in_tile * 16) as u16;
+        let high_byte = self.ram[
+            (tile_address + y_in_tile as u16 * 2 + 1) as usize
+        ];
+        let low_byte = self.ram[
+            (tile_address + y_in_tile as u16 * 2) as usize
+        ];
         (
-            ((line_tile & (1 << (x_in_tile + 8))) >> (x_in_tile + 8)) +
-            ((line_tile & (1 << (x_in_tile))) >> (x_in_tile + 7)) 
+            (((high_byte >> (7 - x_in_tile)) & 0x01) << 1) |
+            ((low_byte >> (7 - x_in_tile)) & 0x01)
         ) as u8
     }
 
@@ -561,8 +580,16 @@ impl GPU {
     fn color_background(&self, x: u8, y: u8) -> u8 {
         let y_in_map = self.background_viewport_y + y;
         let x_in_map = self.background_viewport_x + x;
-        let tile_index: u16 = x_in_map as u16 / 8 + (y_in_map as u16 / 8) * 256;
-        let tile_address = self.background_tile_map() + (tile_index * 2) as u16; 
+        let tile_in_map = x_in_map as usize + y_in_map as usize * 32;
+        let tile_index = self.ram[
+            self.background_tile_map() as usize +
+            tile_in_map * 2
+        ]; 
+        let tile_address = if tile_index < 128 {
+            self.bg_and_window_tile_data_area() + tile_index as u16
+        } else {
+            0x8800 + tile_index as u16
+        };
         let x_in_tile = x_in_map % 8;
         let y_in_tile = y_in_map % 8;
         let color_id = self.color_id_in_tile(
@@ -583,13 +610,18 @@ impl GPU {
     /// **u8**: Color of the given pixel from the window or 4 if the pixel is
     /// out of the window
     fn color_window(&self, x: u8, y: u8) -> u8 {
-        let y_in_map = self.window_y_position + y;
-        let x_in_map = self.window_x_position_plus_sept + x;
-        if (y_in_map >= 143) || (x_in_map >= 166) {
-            return 4;
-        }
-        let tile_index = x_in_map as u16 / 8 + (y_in_map as u16 / 8) * 256;
-        let tile_address = self.window_tile_map() + (tile_index * 2); 
+        let y_in_map = self.background_viewport_y + y;
+        let x_in_map = self.background_viewport_x + x;
+        let tile_in_map = x_in_map as usize + y_in_map as usize * 32;
+        let tile_index = self.ram[
+            self.window_tile_map() as usize +
+            tile_in_map * 2
+        ]; 
+        let tile_address = if tile_index < 128 {
+            self.bg_and_window_tile_data_area() + tile_index as u16
+        } else {
+            0x8800 + tile_index as u16
+        };
         let x_in_tile = x_in_map % 8;
         let y_in_tile = y_in_map % 8;
         let color_id = self.color_id_in_tile(
