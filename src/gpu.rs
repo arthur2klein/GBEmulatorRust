@@ -580,23 +580,31 @@ impl GPU {
     fn color_background(&self, x: u8, y: u8) -> u8 {
         let y_in_map = self.background_viewport_y + y;
         let x_in_map = self.background_viewport_x + x;
-        let tile_in_map = x_in_map as usize + y_in_map as usize * 32;
+        // Position of the tile when reading line by line from left to right
+        let tile_in_map =
+            (x_in_map >> 3) as usize +
+            (y_in_map >> 3) as usize * 32;
+        // This position is the index in the background tile map which is a
+        // list of byte identifying each tile of the background.
         let tile_index = self.ram[
             self.background_tile_map() as usize +
-            tile_in_map * 2
+            tile_in_map
         ]; 
+        // The id found above correspond to one of the tile of the background
+        // and window tile data (each tile is 16 bytes)
         let tile_address = if tile_index < 128 {
-            self.bg_and_window_tile_data_area() + tile_index as u16
+            self.bg_and_window_tile_data_area() + ((tile_index as u16) << 4)
         } else {
-            0x8800 + tile_index as u16
+            0x8800 + ((tile_index as u16) << 4)
         };
-        let x_in_tile = x_in_map % 8;
-        let y_in_tile = y_in_map % 8;
+        // The color is is then found for this tile for the correct pixel. Each
+        // tile is 8x8 pixels.
         let color_id = self.color_id_in_tile(
            tile_address,
-           y_in_tile,
-           x_in_tile
+           y_in_map & 0x07,
+           x_in_map & 0x07
         );
+        // This color id is a color of the palette of the background
         (self.bg_palette_data >> (color_id * 2)) & 0x03
     }
 
@@ -610,25 +618,44 @@ impl GPU {
     /// **u8**: Color of the given pixel from the window or 4 if the pixel is
     /// out of the window
     fn color_window(&self, x: u8, y: u8) -> u8 {
-        let y_in_map = self.background_viewport_y + y;
-        let x_in_map = self.background_viewport_x + x;
-        let tile_in_map = x_in_map as usize + y_in_map as usize * 32;
+        let (y_in_map, did_overflow_y) =
+            self.window_y_position.overflowing_add(y);
+        let (x_in_map_plus_sept, did_overflow_x) =
+            self.window_x_position_plus_sept.overflowing_add(x);
+        // If the window is outside of the screen, 4 is returned
+        if x_in_map_plus_sept < 7 ||
+           did_overflow_y ||
+           did_overflow_x ||
+           x_in_map_plus_sept > 167 ||
+           y_in_map > 144 {
+            return 4;
+        }
+        let x_in_map = x_in_map_plus_sept - 7;
+        // Position of the tile when reading line by line from left to right
+        let tile_in_map =
+            (x_in_map >> 3) as usize +
+            (y_in_map >> 3) as usize * 32;
+        // This position is the index in the window tile map which is a
+        // list of byte identifying each tile of the window.
         let tile_index = self.ram[
             self.window_tile_map() as usize +
-            tile_in_map * 2
+            tile_in_map
         ]; 
+        // The id found above correspond to one of the tile of the background
+        // and window tile data (each tile is 16 bytes)
         let tile_address = if tile_index < 128 {
-            self.bg_and_window_tile_data_area() + tile_index as u16
+            self.bg_and_window_tile_data_area() + ((tile_index as u16) << 4)
         } else {
-            0x8800 + tile_index as u16
+            0x8800 + ((tile_index as u16) << 4)
         };
-        let x_in_tile = x_in_map % 8;
-        let y_in_tile = y_in_map % 8;
+        // The color is is then found for this tile for the correct pixel. Each
+        // tile is 8x8 pixels.
         let color_id = self.color_id_in_tile(
            tile_address,
-           y_in_tile,
-           x_in_tile
+           y_in_map & 0x07,
+           x_in_map & 0x07
         );
+        // This color id is a color of the palette of the background
         (self.bg_palette_data >> (color_id * 2)) & 0x03
     }
 
@@ -650,23 +677,30 @@ impl GPU {
         y: u8,
         obj_in_line: &Vec<u32>
     ) -> u8 {
+        // Color of the background for this pixel
         let color_from_background = self.color_background(x, y);
+        // Color of the window for this pixel
         let color_from_window = self.color_window(x, y);
+        // Color of the objects for this pixel
         let mut has_priority: bool = false;
         let mut x_position: u8 = 0xFF;
         let mut color_from_obj: u8 = 0;
         let mut is_transparent: bool = true;
+        // Comparison of the objects
         for i in obj_in_line.iter() {
             let object = &self.object_attribute[
                 obj_in_line[*i as usize] as usize
             ];
+            // If the object does not contain this pixel
             if !(
                 object.x_position <= x &&
                 object.x_position + 8 > x
             ) {
                 continue;
             }
-            let tile_for_obj = 0x8000 + (16 * object.tile_index) as u16;
+            // The tile_index is the index in the object tile data where each
+            // tile is 16 bytes
+            let tile_for_obj = 0x8000 + ((object.tile_index as u16) << 4);
             let color_id = self.color_id_in_tile(
                 tile_for_obj,
                 if object.get_y_flip() {
@@ -680,17 +714,22 @@ impl GPU {
                     7 - (x + object.x_position)
                 },
             );
+            // If the pixel is pixel for this object
             if color_id == 0 {
                 continue;
             }
+            // If not, we are certain to have found a non-transparent pixel
             is_transparent = false;
             let current_has_priority = object.get_priority();
+            // If we have already found an object with higher priority
             if has_priority && !current_has_priority {
                 continue;
             }
+            // Object with a smaller x position have a higher priority
             if x_position < object.x_position {
                 continue;
             }
+            // If the loop iteration reach this point, the object is on top
             has_priority = current_has_priority;
             x_position = object.x_position;
             color_from_obj = (if object.get_dmg_palette() {
@@ -699,6 +738,7 @@ impl GPU {
                 self.obp0
             } >> (2 * color_id)) & 0x3;
         }
+        // We apply the rules to know what is on front
         if !is_transparent && self.should_draw_objects() {
             color_from_obj
         } else if self.should_draw_window_and_background() {
