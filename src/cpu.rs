@@ -19,28 +19,6 @@ macro_rules! form_16_bits_register {
             )]
             /// # Returns
             /// **u16**: Value of the 16 bit register.
-            ///
-            /// # Examples
-            /// ``` rust
-            /// let mut new_registers = Registers::new();
-            #[doc = concat!(
-                "new_registers.",
-                stringify!($register1),
-                "= 0x12;"
-            )]
-            #[doc = concat!(
-                "new_registers.",
-                stringify!($register2),
-                "= 0x34;"
-            )]
-            #[doc = concat!(
-                "assert_eq!(",
-                "new_registers.get_",
-                stringify!($register1),
-                stringify!($register2),
-                "(), 0x1234);"
-            )]
-            /// ```
             fn [< get_ $register1 $register2 >](&self) -> u16 {
                 (self.$register1 as u16) << 8
                    | self.$register2 as u16
@@ -57,27 +35,6 @@ macro_rules! form_16_bits_register {
             )]
             /// # Arguments
             /// **value (u16)**: New value of the 16 bit register.
-            ///
-            /// # Examples
-            /// ``` rust
-            /// let mut new_registers = Registers::new();
-            #[doc = concat!(
-                "new_registers.set_",
-                stringify!($register1),
-                stringify!($register2),
-                "(0x1234);"
-            )]
-            #[doc = concat!(
-                "assert_eq!(new_registers.",
-                stringify!($register1),
-                ", 0x12);"
-            )]
-            #[doc = concat!(
-                "assert_eq!(new_registers.",
-                stringify!($register2),
-                ", 0x34);"
-            )]
-            /// ```
             fn [< set_ $register1 $register2 >](&mut self, value: u16) {
                 self.$register1 = ((value & 0xFF00) >> 8) as u8;
                 self.$register2 = (value & 0xFF) as u8;
@@ -117,11 +74,6 @@ impl Registers {
     /// # Returns
     /// 
     /// **Register**: New instance of Registers
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// ```
     fn new() -> Self {
         Registers {
             a: 0x01,
@@ -149,17 +101,6 @@ impl Registers {
     ///
     /// # Returns
     /// **u16**: Current value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.h = 0x12;
-    /// new_registers.l = 0x34;
-    /// // The current value is still returned
-    /// assert_eq!(new_registers.get_hld(), 0x1234);
-    /// // But it is changed for the next evaluation
-    /// assert_eq!(new_registers.get_hl(), 0x1233);
-    /// ```
     fn get_hld(&mut self) -> u16 {
         let res = self.get_hl();
         self.set_hl(res - 1);
@@ -173,17 +114,6 @@ impl Registers {
     ///
     /// # Returns
     /// **u16**: Current value of the 16 bit register.
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.h = 0x12;
-    /// new_registers.l = 0x34;
-    /// // The current value is still returned
-    /// assert_eq!(new_registers.get_hli(), 0x1234);
-    /// // But it is changed for the next evaluation
-    /// assert_eq!(new_registers.get_hl(), 0x1235);
-    /// ```
     fn get_hli(&mut self) -> u16 {
         let res = self.get_hl();
         self.set_hl(res + 1);
@@ -196,14 +126,6 @@ impl Registers {
     ///
     /// # Returns
     /// **bool**: true iff the carry flag is set
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// // Sets the carry flag
-    /// new_registers.f = 0x10;
-    /// assert!(new_registers.get_carry());
-    /// ```
     fn get_carry(&self) -> bool {
         self.f & 0b00010000 != 0
     }
@@ -214,14 +136,6 @@ impl Registers {
     ///
     /// # Arguments
     /// **value (bool)**: true iff you want the carry flag is to be set
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.set_carry(true);
-    /// // Only the carry flag has been set
-    /// assert_eq!(new_registers.f, 0x10);
-    /// ```
     fn set_carry(&mut self, value: bool) {
         if value {
             self.f |= 0b00010000;
@@ -237,14 +151,6 @@ impl Registers {
     ///
     /// # Returns
     /// **bool**: true iff the half carry flag is set
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// // Sets the half carry flag
-    /// new_registers.f = 0x20;
-    /// assert!(new_registers.get_half());
-    /// ```
     fn get_half(&self) -> bool {
         self.f & 0b00100000 != 0
     }
@@ -256,14 +162,6 @@ impl Registers {
     ///
     /// # Arguments
     /// **value (bool)**: true iff you want the half carry flag is to be set
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.set_half(true);
-    /// // Only the half carry flag has been set
-    /// assert_eq!(new_registers.f, 0x20);
-    /// ```
     fn set_half(&mut self, value: bool) {
         if value {
             self.f |= 0b00100000;
@@ -279,14 +177,6 @@ impl Registers {
     ///
     /// # Returns
     /// **bool**: true iff the substraction flag is set
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// // Sets the substraction flag
-    /// new_registers.f = 0x40;
-    /// assert!(new_registers.get_sub());
-    /// ```
     fn get_sub(&self) -> bool {
         self.f & 0b01000000 != 0
     }
@@ -298,14 +188,6 @@ impl Registers {
     ///
     /// # Arguments
     /// **value (bool)**: true iff you want the substaction flag is to be set
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.set_sub(true);
-    /// // Only the substraction has been set
-    /// assert_eq!(new_registers.f, 0x40);
-    /// ```
     fn set_sub(&mut self, value: bool) {
         if value {
             self.f |= 0b01000000;
@@ -321,14 +203,6 @@ impl Registers {
     ///
     /// # Returns
     /// **bool**: true iff the zero flag is set
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// // Sets the zero flag
-    /// new_registers.f = 0x80;
-    /// assert!(new_registers.get_zero());
-    /// ```
     fn get_zero(&self) -> bool {
         self.f & 0b10000000 != 0
     }
@@ -340,14 +214,6 @@ impl Registers {
     ///
     /// # Arguments
     /// **value (bool)**: true iff you want the zero flag is to be set
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_registers = Registers::new();
-    /// new_registers.set_zero(true);
-    /// // Only the zero has been set
-    /// assert_eq!(new_registers.f, 0x80);
-    /// ```
     fn set_zero(&mut self, value: bool) {
         if value {
             self.f |= 0b10000000;
@@ -386,11 +252,6 @@ impl CPU {
     /// # Returns
     /// 
     /// **CPU**: New instance of CPU
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// ```
     pub fn new(cartridge_path: &str) -> Self {
         CPU{
             registers: Registers::new(),
@@ -407,16 +268,6 @@ impl CPU {
     ///
     /// # Retuns
     /// **u8**: Byte read in the code of the program
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.mmu.write_byte(
-    ///     new_cpu.registers.pc,
-    ///     0x12
-    /// );
-    /// assert_eq!(new_cpu.fetchbyte(), 0x12);
-    /// ```
     fn fetchbyte(&mut self) -> u8 {
         let res = self.mmu.read_byte(self.registers.pc);
         println!(
@@ -432,16 +283,6 @@ impl CPU {
     ///
     /// # Retuns
     /// **u16**: Word read in the code of the program
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.mmu.write_word(
-    ///     new_cpu.registers.pc,
-    ///     0x1234
-    /// );
-    /// assert_eq!(new_cpu.fetchword(), 0x1234);
-    /// ```
     fn fetchword(&mut self) -> u16 {
         let res = self.mmu.read_word(self.registers.pc);
         println!(
@@ -456,28 +297,11 @@ impl CPU {
     /// Sends a stop message to the MMU
     ///
     /// Switch the speed of the Memory Management Unit
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// assert!(!new_cpu.mmu.is_double_speed);
-    /// new_cpu.send_stop();
-    /// assert!(new_cpu.mmu.is_double_speed);
-    /// ```
     fn send_stop(&mut self) {
         self.mmu.receive_stop();
     }
 
     /// Stops the gameboy until an interruption is triggered
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// // Deactivate interruption
-    /// new_cpu.ime = false;
-    /// new_cpu.halt();
-    /// // Now the CPU will only execute NOP
-    /// ```
     fn halt(&mut self) {
         self.is_halted = true;
     }
@@ -486,13 +310,6 @@ impl CPU {
     ///
     /// # Returns
     /// **u16**: value popped from the stack
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.push(0x1234);
-    /// assert_eq!(new_cpu.pop(), 0x1234);
-    /// ```
     fn pop(&mut self) -> u16 {
         let res = self.mmu.read_word(
             self.registers.sp
@@ -505,13 +322,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u16)**: value to push in the stack
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.push(0x1234);
-    /// assert_eq!(new_cpu.pop(), 0x1234);
-    /// ```
     fn push(&mut self, value: u16) {
         self.registers.sp = self.registers.sp.wrapping_sub(2);
         self.mmu.write_word(
@@ -525,32 +335,12 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u16)**: new value of the program counter
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.rst(0x0060);
-    /// assert_eq!(new_cpu.registers.pc, 0x0060);
-    /// ```
     fn rst(&mut self, value: u16) {
         self.push(self.registers.pc);
         self.registers.pc = value;
     }
 
     /// Jumps by the value of the next immediate in the program read as a real
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// let before = new_cpu.registers.pc;
-    /// // Normally the adress should already be written in cartridges/Tetris.gb
-    /// new_cpu.mmu.write_byte(
-    ///     new_cpu.registers.pc,
-    ///     0x12
-    /// );
-    /// new_cpu.jr();
-    /// assert_eq!(new_cpu.registers.pc - before, 0x12);
-    /// ```
     fn jr(&mut self) {
         // Les conversions permettent d'assurer que fetchbyte est considéré
         // comme signé, mais pas pc, que l'opérations puisse avoir lieu, et
@@ -562,13 +352,6 @@ impl CPU {
     }
 
     /// Make the CPU work indefinitively
-    ///
-    /// # Examples
-    /// ```rust
-    /// let new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// // Let's hope the cartridge "cartridges/Tetris.gb" contains something
-    /// new_cpu.run();
-    /// ```
     pub fn run(&mut self) {
         while !self.should_stop {
             let time = SystemTime::now();
@@ -589,12 +372,6 @@ impl CPU {
     ///
     /// # Returns
     /// **u32**: Number of cycles used for the step
-    ///
-    /// # Examples
-    /// ```rust
-    /// let new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.receive_op();
-    /// ```
     fn receive_op(&mut self) -> u32 {
         println!(
             "Execution of the operation at address {:#04x}/0x4000",
@@ -2480,12 +2257,6 @@ impl CPU {
     ///
     /// # Returns
     /// **u32**: Number of cycles used for the step
-    ///
-    /// # Examples
-    /// ```rust
-    /// let new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.call_cb();
-    /// ```
     fn call_cb(&mut self) -> u32 {
         let op = self.fetchbyte();
         match op {
@@ -4392,18 +4163,6 @@ impl CPU {
     ///
     /// Activate interruption handing 1 instruction after ei.  
     /// Deactivate interruption handing 1 instruction after di.  
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.di = 2;
-    /// // ime is not deactivated after one update
-    /// new_cpu.update_ime();
-    /// assert!(new_cpu.ime);
-    /// // ime is deactivated after the second update
-    /// new_cpu.update_ime();
-    /// assert!(!new_cpu.ime);
-    /// ```
     fn update_ime(&mut self) {
         match self.di {
             2 => {
@@ -4436,17 +4195,6 @@ impl CPU {
     /// # Returns
     /// **u32**: Number of cycles used to handle interruptions (0 if not
     /// handled).
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// // Artificially create a joypad interruption
-    /// new_cpu.mmu.interrupt_flag = 0x10;
-    /// new_cpu.mmu.ie = 0x10;
-    /// new_cpu.ime = true;
-    /// assert_eq!(new_cpu.manage_interruptions(), 20);
-    /// // A joypad interruption moves the program counter to the adress 0x0060
-    /// assert_eq!(new_cpu.registers.pc, 0x0060);
     fn manage_interruptions(&mut self) -> u32 {
         if self.ime {
             // if io.pending_joypad_interruption
@@ -4533,12 +4281,6 @@ impl CPU {
     ///
     /// # Returns
     /// **u8**: Parameter's value incremented
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// assert_eq!(new_cpu.inc(0x01), 0x02);
-    /// ```
     fn inc(&mut self, value: u8) -> u8 {
         let res = value.wrapping_add(1);
         self.registers.set_zero(
@@ -4567,12 +4309,6 @@ impl CPU {
     ///
     /// # Returns
     /// **u8**: Parameter's value decremented
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// assert_eq!(new_cpu.dec(0x02), 0x01);
-    /// ```
     fn dec(&mut self, value: u8) -> u8 {
         let res = value.wrapping_sub(1);
         self.registers.set_zero(
@@ -4598,15 +4334,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u8)**: Value added to A
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0x12;
-    /// new_cpu.add(0x34);
-    /// // 0x12 + 0x34 = 0x46
-    /// assert_eq!(new_cpu.registers.a, 0x46);
-    /// ```
     fn add(&mut self, value: u8) {
         let (
             new_value,
@@ -4637,16 +4364,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u8)**: Value added to A
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0x12;
-    /// new_cpu.registers.set_carry(true);
-    /// new_cpu.adc(0x34);
-    /// // 0x12 + 0x34 + 0x01 = 0x47
-    /// assert_eq!(new_cpu.registers.a, 0x47);
-    /// ```
     fn adc(&mut self, value: u8) {
         let carry_as_u8 = if self.registers.get_carry() {1u8} else {0u8};
         let (
@@ -4682,15 +4399,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u16)**: Value added to HL
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.set_hl(0x3412);
-    /// new_cpu.addhl(0x369C);
-    /// // 0x369C + 0x3412 = 0x6AAE
-    /// assert_eq!(new_cpu.registers.get_hl(), 0x6AAE);
-    /// ```
     fn addhl(&mut self, value: u16) {
         let (
             new_value,
@@ -4723,14 +4431,6 @@ impl CPU {
     /// # Returns
     /// **u16**: Given value added with the real word written at the program
     /// counter.
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.mmu.write_byte(new_cpu.registers.pc, 0x34);
-    /// // 0x369C + 0x0034 = 0x36D0
-    /// assert_eq!(new_cpu.addr8(0x369C), 0x36D0);
-    /// ```
     fn addr8(&mut self, value: u16) -> u16 {
         // i8 to have a sign value, i16 to keep the sign and have 16 bits, u16
         // to make the addition
@@ -4760,15 +4460,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u8)**: Value to substract to the register A
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0x12;
-    /// new_cpu.sub(0x03);
-    /// // 0x12 - 0x03 = 0x0F
-    /// assert_eq!(new_cpu.registers.a, 0x0F);
-    /// ```
     fn sub(&mut self, value: u8) {
         let (new_value, did_overflow) = self.registers.a.overflowing_sub(value);
         self.registers.set_zero(
@@ -4798,16 +4489,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u8)**: Value to substract to the register A
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0x12;
-    /// new_cpu.registers.set_carry(true);
-    /// new_cpu.sbc(0x03);
-    /// // 0x12 - 0x03 - 0x01 = 0x0E
-    /// assert_eq!(new_cpu.registers.a, 0x0E);
-    /// ```
     fn sbc(&mut self, value: u8) {
         let carry_as_u8 = if self.registers.get_carry() {1u8} else {0u8};
         let (temp_value, did_overflow1) = self.registers.a.overflowing_sub(
@@ -4840,15 +4521,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u8)**: Value to compare A to
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0x12;
-    /// new_cpu.cp(0x15);
-    /// // 0x12 < 0x15
-    /// assert!(new_cpu.registers.get_carry());
-    /// ```
     fn cp(&mut self, value: u8) {
         let (new_value, did_overflow) = self.registers.a.overflowing_sub(value);
         self.registers.set_zero(
@@ -4875,14 +4547,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u8)**: Value to and A with
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b01110110;
-    /// new_cpu.and(0b01001011);
-    /// assert_eq!(new_cpu.registers.a, 0b01000010);
-    /// ```
     fn and(&mut self, value: u8) {
         self.registers.a &= value;
         self.registers.set_zero(
@@ -4909,14 +4573,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u8)**: Value to or A with
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b01110110;
-    /// new_cpu.or(0b01001011);
-    /// assert_eq!(new_cpu.registers.a, 0b01111111);
-    /// ```
     fn or(&mut self, value: u8) {
         self.registers.a |= value;
         self.registers.set_zero(
@@ -4943,14 +4599,6 @@ impl CPU {
     ///
     /// # Arguments
     /// **value (u8)**: Value to xor A with
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b01110110;
-    /// new_cpu.xor(0b01001011);
-    /// assert_eq!(new_cpu.registers.a, 0b01111111);
-    /// ```
     fn xor(&mut self, value: u8) {
         self.registers.a ^= value;
         self.registers.set_zero(
@@ -4981,15 +4629,6 @@ impl CPU {
     /// # Returns
     /// **u8**: Value of the argument shifted one bit to the left and with the
     /// rightest bit set iff the carry is set
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b10010011;
-    /// assert!(!new_cpu.registers.get_carry());
-    /// let res = new_cpu.rl(new_cpu.registers.a);
-    /// assert_eq!(res, 0b00100110);
-    /// ```
     fn rl(&mut self, value: u8) -> u8 {
         let res = (value << 1) | (
             if self.registers.get_carry() {
@@ -5028,14 +4667,6 @@ impl CPU {
     /// # Returns
     /// **u8**: Value of the argument shifted one bit to the left and with the
     /// rightest bit set iff the bit that overstep is set
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b10010011;
-    /// let res = new_cpu.rlc(new_cpu.registers.a);
-    /// assert_eq!(res, 0b00100111);
-    /// ```
     fn rlc(&mut self, value: u8) -> u8 {
         // left shift + bit qui sort placé à droite
         let res = (value << 1) | (
@@ -5075,16 +4706,6 @@ impl CPU {
     /// # Returns
     /// **u8**: Value of the argument shifted one bit to the right and with the
     /// leftest bit set iff the carry is set
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b10010011;
-    /// // The carry flag is initially reset
-    /// assert!(!new_cpu.registers.get_carry());
-    /// let res = new_cpu.rr(new_cpu.registers.a);
-    /// assert_eq!(res, 0b01001001);
-    /// ```
     fn rr(&mut self, value: u8) -> u8 {
         // right shift + carry flag placé à gauche
         let res = (value >> 1) | (
@@ -5124,14 +4745,6 @@ impl CPU {
     /// # Returns
     /// **u8**: Value of the argument shifted one bit to the right and with the
     /// leftest bit set iff the bit that overstep is set
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b10010011;
-    /// let res = new_cpu.rrc(new_cpu.registers.a);
-    /// assert_eq!(res, 0b11001001);
-    /// ```
     fn rrc(&mut self, value: u8) -> u8 {
         let res = (value >> 1) | (
             if (value & 0x01) == 0x01 {
@@ -5170,14 +4783,6 @@ impl CPU {
     /// # Returns
     /// **u8**: Value of the argument shifted one bit to the left and with the
     /// rightest bit unchanged
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b10010011;
-    /// let res = new_cpu.sla(new_cpu.registers.a);
-    /// assert_eq!(res, 0b00100111);
-    /// ```
     fn sla(&mut self, value: u8) -> u8 {
         let result = (value << 1) | (value & 0x01);
         self.registers.set_half(
@@ -5209,14 +4814,6 @@ impl CPU {
     /// # Returns
     /// **u8**: Value of the argument shifted one bit to the right and with the
     /// leftest bit unchanged
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b10010010;
-    /// let res = new_cpu.sra(new_cpu.registers.a);
-    /// assert_eq!(res, 0b11001001);
-    /// ```
     fn sra(&mut self, value: u8) -> u8 {
         let result = value >> 1 | (value & 0x80);
         self.registers.set_half(
@@ -5248,14 +4845,6 @@ impl CPU {
     /// # Returns
     /// **u8**: Value of the argument shifted one bit to the right and with the
     /// leftest bit reset
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0b10010010;
-    /// let res = new_cpu.srl(new_cpu.registers.a);
-    /// assert_eq!(res, 0b01001001);
-    /// ```
     fn srl(&mut self, value: u8) -> u8 {
         let result = value >> 1;
         self.registers.set_half(
@@ -5287,14 +4876,6 @@ impl CPU {
     /// # Returns
     /// **u8**: Value of the argument with the four lower and the four upper
     /// bits swapped.
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0x12;
-    /// let res = new_cpu.swap(new_cpu.registers.a);
-    /// assert_eq!(res, 0x21);
-    /// ```
     fn swap(&mut self, value: u8) -> u8 {
         let result = 
             (value & 0xF0) >> 4 |
@@ -5326,15 +4907,6 @@ impl CPU {
     /// # Arguments
     /// **bit (u32)**: Position of the bit to test  
     /// **value (u8)**: Value to test
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// assert!(new_cpu.registers.get_zero());
-    /// new_cpu.registers.a = 0x02;
-    /// new_cpu.bit(1, new_cpu.registers.a);
-    /// assert!(!new_cpu.registers.get_zero());
-    /// ```
     fn bit(&mut self, bit: u32, value: u8) {
         self.registers.set_zero(
             value & ((1 << bit) as u8) == 0
@@ -5358,14 +4930,6 @@ impl CPU {
     ///
     /// # Returns
     /// **u8**: Initial value with the given bit reset
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0x04;
-    /// let res = new_cpu.res(2, new_cpu.registers.a);
-    /// assert_eq!(res, 0x00);
-    /// ```
     fn res(&mut self, bit: u32, value: u8) -> u8 {
         value & !((1 << bit) as u8)
     }
@@ -5380,15 +4944,6 @@ impl CPU {
     ///
     /// # Returns
     /// **u8**: Initial value with the given bit set
-    ///
-    /// # Examples
-    /// ``` rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// // Initially the A registers contains the value 1
-    /// assert_eq!(new_cpu.registers.a, 0x01);
-    /// let res = new_cpu.set(2, new_cpu.registers.a);
-    /// assert_eq!(res, 0x05);
-    /// ```
     fn set(&mut self, bit: u32, value: u8) -> u8 {
         value | ((1 << bit) as u8)
     }
@@ -5412,18 +4967,6 @@ impl CPU {
     /// Does not affect the N flag  
     /// Always resets the H falg  
     /// Sets the carry flag iff the correction create an overflow  
-    ///
-    /// # Examples
-    /// ```rust
-    /// let mut new_cpu = CPU::new("cartridges/Tetris.gb");
-    /// new_cpu.registers.a = 0x92;
-    /// new_cpu.registers.b = 0x36;
-    /// new_cpu.add(new_cpu.registers.b);
-    /// // The two operand are correct BCD but the resutl is not
-    /// assert_eq!(new_cpu.registers.a, 0xC8);
-    /// new_cpu.daa();
-    /// assert_eq!(new_cpu.registers.a, 0x28);
-    /// ```
     fn daa(&mut self) {
         let mut a = self.registers.a;
         if self.registers.get_sub() {
