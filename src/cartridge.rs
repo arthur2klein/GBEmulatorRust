@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{File, metadata, create_dir};
 use std::io::Read;
 use std::io::Write;
 
@@ -23,6 +23,7 @@ impl Cartridge {
     pub fn new(
         file_path: &str
     ) -> Self {
+        Self::check_folder_save();
         let mut file = File::open(file_path)
             .expect("Cannot read the cartridge.");
         let mut rom: Vec<u8> = Vec::new();
@@ -33,6 +34,14 @@ impl Cartridge {
             rom,
             ram: Self::ram_from_save(&save_file),
             save_file,
+        }
+    }
+
+    /// Checks that the folder save exists
+    /// Create a folder save if none exists
+    fn check_folder_save() {
+        if metadata("save/").is_err() {
+            create_dir("save").unwrap();
         }
     }
 
