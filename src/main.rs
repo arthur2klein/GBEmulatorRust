@@ -1,6 +1,6 @@
 use std::fs;
 use std::io;
-use gb_emulator_rust::cpu::CPU;
+use gb_emulator_rust::components::cpu::CPU;
 
 /// Name of the foler where the cartridge will be searched
 const CARTRIDGES_FOLDER_NAME: &str = "cartridges";
