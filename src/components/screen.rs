@@ -10,6 +10,17 @@ const HEIGHT: u8 = 144;
 /// Scale of the window of the emulator
 const PIXEL_SIZE: usize = 5;
 
+/// Key Mapping
+const KEY_START: Key = Key::I;
+const KEY_SELECT: Key = Key::O;
+const KEY_A: Key = Key::K;
+const KEY_B: Key = Key::L;
+const KEY_UP: Key = Key::Z;
+const KEY_DOWN: Key = Key::S;
+const KEY_RIGHT: Key = Key::D;
+const KEY_LEFT: Key = Key::Q;
+const KEY_QUIT: Key = Key::Escape;
+
 /// Creates a window for the emulator
 pub struct Screen {
     /// Buffer for the screen
@@ -53,20 +64,17 @@ impl Screen {
     /// **bool**: Is the escape key being pressed
     pub fn update_key_press(&mut self) -> bool {
         self.update();
-        if !self.window.is_active() {
-            println!("WINDOW IS NOT ACTIVE");
-        }
         self.key_state.update(
-            self.window.is_key_down(Key::Space),
-            self.window.is_key_down(Key::S),
-            self.window.is_key_down(Key::D),
-            self.window.is_key_down(Key::F),
-            self.window.is_key_down(Key::Up),
-            self.window.is_key_down(Key::Down),
-            self.window.is_key_down(Key::Right),
-            self.window.is_key_down(Key::Left),
+            self.window.is_key_down(KEY_START),
+            self.window.is_key_down(KEY_SELECT),
+            self.window.is_key_down(KEY_A),
+            self.window.is_key_down(KEY_B),
+            self.window.is_key_down(KEY_UP),
+            self.window.is_key_down(KEY_DOWN),
+            self.window.is_key_down(KEY_RIGHT),
+            self.window.is_key_down(KEY_LEFT),
         );
-        self.window.is_key_down(Key::Escape)
+        self.window.is_key_down(KEY_QUIT)
     }
 
     /// Change the color of a pixel of the GameBoy
