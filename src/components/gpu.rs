@@ -3,7 +3,7 @@ use crate::state::key_state::KeyState;
 use crate::state::tile_object::TileObject;
 
 /// Represents the GPU or PPU of the GameBoy
-pub struct GPU {
+pub struct Gpu {
     /// VRAM of the GPU
     ram: Vec<u8>,
     /// OAM of the GPU
@@ -48,7 +48,7 @@ pub struct GPU {
     cpu_cycle: u16,
 }
 
-impl GPU {
+impl Gpu {
     /// Create a new GPU
     ///
     /// # Returns
@@ -406,7 +406,7 @@ impl GPU {
     /// # Returns
     /// **bool**: true iff the Escape key was pressed
     pub fn update(&mut self, n_cycles: u16) -> bool {
-        if (self.cpu_cycle & 0x3FFF + n_cycles) >= 0x4000 {
+        if (self.cpu_cycle & (0x3FFF + n_cycles)) >= 0x4000 {
             self.draw_lines();
         }
         self.cpu_cycle = self.cpu_cycle.wrapping_add(n_cycles);
@@ -500,10 +500,10 @@ impl GPU {
         let low_byte = self.ram[
             (tile_address + y_in_tile as u16 * 2) as usize
         ];
-        (
-            (((high_byte >> (7 - x_in_tile)) & 0x01) << 1) |
-            ((low_byte >> (7 - x_in_tile)) & 0x01)
-        ) as u8
+        
+        (((high_byte >> (7 - x_in_tile)) & 0x01) << 1) |
+        ((low_byte >> (7 - x_in_tile)) & 0x01)
+        
     }
 
     /// Returns the color of a pixel of the background
@@ -612,7 +612,7 @@ impl GPU {
         &mut self,
         x: u8,
         y: u8,
-        obj_in_line: &Vec<u32>
+        obj_in_line: &[u32]
     ) -> u8 {
         // Color of the background for this pixel
         let color_from_background = self.color_background(x, y);

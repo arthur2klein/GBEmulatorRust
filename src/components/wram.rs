@@ -1,9 +1,9 @@
 /// Contains the data of the Working ram
-pub struct WRAM {
+pub struct Wram {
     ram: Vec<u8>
 }
 
-impl WRAM {
+impl Wram {
     /// Create the WRAM with no data
     ///
     /// # Returns

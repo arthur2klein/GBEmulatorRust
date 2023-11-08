@@ -1,9 +1,9 @@
 /// Contains the data of the High ram
-pub struct HRAM {
+pub struct Hram {
     ram: Vec<u8>
 }
 
-impl HRAM {
+impl Hram {
     /// Create the HRAM with no data
     ///
     /// # Returns

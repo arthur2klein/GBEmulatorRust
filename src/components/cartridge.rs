@@ -28,7 +28,7 @@ impl Cartridge {
             .expect("Cannot read the cartridge.");
         let mut rom: Vec<u8> = Vec::new();
         file.read_to_end(&mut rom).unwrap();
-        let game_name = file_path.rsplit_once("/").unwrap().1;
+        let game_name = file_path.rsplit_once('/').unwrap().1;
         let save_file = format!("save/{}.save", game_name);
         Self {
             rom,

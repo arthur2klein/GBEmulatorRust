@@ -1,11 +1,11 @@
 use crate::components::io::IO;
-use crate::components::hram::HRAM;
-use crate::components::wram::WRAM;
-use crate::components::gpu::GPU;
+use crate::components::hram::Hram;
+use crate::components::wram::Wram;
+use crate::components::gpu::Gpu;
 use crate::components::cartridge::Cartridge;
 
 /// Memory management unit of the GameBoy
-pub struct MMU {
+pub struct Mmu {
     /// Interrupt flag: unused/unused/unused/joypad/serial/timer/lcd/vblank
     pub interrupt_flag: u8,
     /// Register that controls the interrupts that are considered to be
@@ -16,18 +16,18 @@ pub struct MMU {
     cartridge: Cartridge,
     /// Reference to the GPU that is going to be used both for VRAM
     /// reading/writing and to forward some of the access operations.
-    gpu: GPU,
+    gpu: Gpu,
     /// Working RAM of the system
-    wram: WRAM,
+    wram: Wram,
     /// High RAM of the system
-    hram: HRAM,
+    hram: Hram,
     /// I/0 Registers
     io: IO,
     /// Is the gameboy in double speed mode
     is_double_speed: bool
 }
 
-impl MMU {
+impl Mmu {
     /// Create a new Memory management unit
     ///
     /// # Arguments
@@ -41,9 +41,9 @@ impl MMU {
             interrupt_flag: 0x00,
             ie: 0x00,
             cartridge: Cartridge::new(cartridge_path),
-            gpu: GPU::new(),
-            wram: WRAM::new(),
-            hram: HRAM::new(),
+            gpu: Gpu::new(),
+            wram: Wram::new(),
+            hram: Hram::new(),
             io: IO::new(),
             is_double_speed: false
         }

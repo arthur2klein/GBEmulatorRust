@@ -1,6 +1,6 @@
 use std::time::{Duration, SystemTime};
 use std::thread::sleep;
-use crate::components::mmu::MMU;
+use crate::components::mmu::Mmu;
 use crate::state::register::Registers;
 
 /// The CPU of the gameboy
@@ -9,7 +9,7 @@ pub struct CPU {
     registers: Registers,
     /// The memory management unit allows the CPU to communicate with the
     /// memory
-    mmu: MMU,
+    mmu: Mmu,
     /// Stops the CPU until an interruption is pending
     is_halted: bool,
     /// Enable interruptions
@@ -35,7 +35,7 @@ impl CPU {
     pub fn new(cartridge_path: &str) -> Self {
         CPU{
             registers: Registers::new(),
-            mmu: MMU::new(cartridge_path),
+            mmu: Mmu::new(cartridge_path),
             is_halted: false,
             ei: 0,
             di: 0,
@@ -491,7 +491,7 @@ impl CPU {
             // CPL
             0x2F => {
                 println!("CPL");
-                self.registers.a = self.registers.a;
+                // self.registers.a = self.registers.a;
                 self.registers.set_half(true);
                 self.registers.set_sub(true);
                 4
@@ -646,7 +646,7 @@ impl CPU {
             // LD B, B
             0x40 => {
                 println!("LD B, B");
-                self.registers.b = self.registers.b;
+                // self.registers.b = self.registers.b;
                 4
             },
             // LD B, C
@@ -702,7 +702,7 @@ impl CPU {
             // LC C, C
             0x49 => {
                 println!("LC C, C");
-                self.registers.c = self.registers.c;
+                // self.registers.c = self.registers.c;
                 4
             },
             // LC C, D
@@ -758,7 +758,7 @@ impl CPU {
             // LD D, D
             0x52 => {
                 println!("LD D, D");
-                self.registers.d = self.registers.d;
+                // self.registers.d = self.registers.d;
                 4
             },
             // LD D, E
@@ -815,7 +815,7 @@ impl CPU {
             // LD E, E
             0x5B => {
                 println!("LD E, E");
-                self.registers.e = self.registers.e;
+                // self.registers.e = self.registers.e;
                 4
             },
             // LD E, H
@@ -871,7 +871,7 @@ impl CPU {
             // LD H, H
             0x64 => {
                 println!("LD H, H");
-                self.registers.h = self.registers.h;
+                // self.registers.h = self.registers.h;
                 4
             },
             // LD H, L
@@ -927,7 +927,7 @@ impl CPU {
             // LD L, L
             0x6D => {
                 println!("LD L, L");
-                self.registers.l = self.registers.l;
+                // self.registers.l = self.registers.l;
                 4
             },
             // LD L, (HL)
@@ -1060,7 +1060,7 @@ impl CPU {
             // LD A, A
             0x7F => {
                 println!("LD A, A");
-                self.registers.a = self.registers.a;
+                // self.registers.a = self.registers.a;
                 4
             },
             // ADD A, B
