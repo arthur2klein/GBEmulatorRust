@@ -64,16 +64,14 @@ impl Screen {
     /// **bool**: Is the escape key being pressed
     pub fn update_key_press(&mut self) -> bool {
         self.update();
-        self.key_state.update(
-            self.window.is_key_down(KEY_START),
-            self.window.is_key_down(KEY_SELECT),
-            self.window.is_key_down(KEY_A),
-            self.window.is_key_down(KEY_B),
-            self.window.is_key_down(KEY_UP),
-            self.window.is_key_down(KEY_DOWN),
-            self.window.is_key_down(KEY_RIGHT),
-            self.window.is_key_down(KEY_LEFT),
-        );
+        self.key_state.is_start_pressed = self.window.is_key_down(KEY_START);
+        self.key_state.is_select_pressed = self.window.is_key_down(KEY_SELECT);
+        self.key_state.is_a_pressed = self.window.is_key_down(KEY_A);
+        self.key_state.is_b_pressed = self.window.is_key_down(KEY_B);
+        self.key_state.is_up_pressed = self.window.is_key_down(KEY_UP);
+        self.key_state.is_down_pressed = self.window.is_key_down(KEY_DOWN);
+        self.key_state.is_right_pressed = self.window.is_key_down(KEY_RIGHT);
+        self.key_state.is_left_pressed = self.window.is_key_down(KEY_LEFT);
         self.window.is_key_down(KEY_QUIT)
     }
 
