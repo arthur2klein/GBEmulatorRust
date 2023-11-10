@@ -406,7 +406,7 @@ impl Gpu {
     /// # Returns
     /// **bool**: true iff the Escape key was pressed
     pub fn update(&mut self, n_cycles: u16) -> bool {
-        if (self.cpu_cycle & (0x3FFF + n_cycles)) >= 0x4000 {
+        if ((self.cpu_cycle & 0x3FFF) + n_cycles) >= 0x4000 {
             self.draw_lines();
         }
         self.cpu_cycle = self.cpu_cycle.wrapping_add(n_cycles);
